@@ -44,7 +44,7 @@ export interface SearchFilters {
 export async function searchPodcasts(
   query: string,
   filters?: SearchFilters,
-  topK: number = 5
+  topK: number = 15
 ): Promise<SearchResponse> {
   const response = await fetch(`${API_URL}/search`, {
     method: "POST",
