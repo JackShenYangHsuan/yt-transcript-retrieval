@@ -552,10 +552,10 @@ const searchEdges: Edge[] = [
   { id: "e11", source: "dense-retrieval", target: "rrf", type: "default", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
   { id: "e12", source: "bm25-retrieval", target: "rrf", type: "default", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
   // Sponsor filter (removes ad content)
-  { id: "e13", source: "rrf", target: "sponsor-filter", type: "default", style: { stroke: "#ef4444", strokeWidth: 2 }, markerEnd: arrowMarker("#ef4444") },
+  { id: "e13", source: "rrf", target: "sponsor-filter", type: "step", style: { stroke: "#ef4444", strokeWidth: 2 }, markerEnd: arrowMarker("#ef4444") },
   // Reranker path (optional - indicated by node label)
-  { id: "e13a", source: "sponsor-filter", target: "reranker", type: "default", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
-  { id: "e14", source: "reranker", target: "results", type: "default", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
+  { id: "e13a", source: "sponsor-filter", target: "reranker", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
+  { id: "e14", source: "reranker", target: "results", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
 ];
 
 // ============================================================================
