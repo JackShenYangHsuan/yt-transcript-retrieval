@@ -359,48 +359,95 @@ function IdeaDetailPanel({
   if (!idea) return null;
 
   return (
-    <div className="absolute top-4 right-4 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-start">
-        <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-medium">
-          {idea.cluster_name}
-        </span>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-        >
-          &times;
-        </button>
-      </div>
-
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">{idea.summary}</h3>
-
-        <div className="text-sm text-gray-600 mb-4 italic border-l-2 border-gray-200 pl-3">
-          &quot;{idea.full_context}&quot;
+    <>
+      {/* Mobile: bottom sheet style */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 max-h-[70vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+          <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-medium">
+            {idea.cluster_name}
+          </span>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1"
+          >
+            &times;
+          </button>
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
-          <CompanyLogo episodeTitle={idea.episode_title} guest={cleanGuestName(idea.guest)} size="md" />
-          <div>
-            <div className="text-sm font-medium text-gray-900">{cleanGuestName(idea.guest)}</div>
-            <div className="text-xs text-gray-500 truncate max-w-[280px]">
-              {idea.episode_title}
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-900 mb-2">{idea.summary}</h3>
+
+          <div className="text-sm text-gray-600 mb-4 italic border-l-2 border-gray-200 pl-3">
+            &quot;{idea.full_context}&quot;
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <CompanyLogo episodeTitle={idea.episode_title} guest={cleanGuestName(idea.guest)} size="md" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-gray-900">{cleanGuestName(idea.guest)}</div>
+              <div className="text-xs text-gray-500 truncate">
+                {idea.episode_title}
+              </div>
             </div>
           </div>
+
+          <a
+            href={idea.youtube_deep_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+          >
+            <YouTubeIcon />
+            <span>Play in YouTube</span>
+            <span className="text-gray-400">@ {idea.timestamp}</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Desktop: side panel */}
+      <div className="hidden md:block absolute top-4 right-4 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-start">
+          <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-medium">
+            {idea.cluster_name}
+          </span>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            &times;
+          </button>
         </div>
 
-        <a
-          href={idea.youtube_deep_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-        >
-          <YouTubeIcon />
-          <span>Play in YouTube</span>
-          <span className="text-gray-400">@ {idea.timestamp}</span>
-        </a>
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-900 mb-2">{idea.summary}</h3>
+
+          <div className="text-sm text-gray-600 mb-4 italic border-l-2 border-gray-200 pl-3">
+            &quot;{idea.full_context}&quot;
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <CompanyLogo episodeTitle={idea.episode_title} guest={cleanGuestName(idea.guest)} size="md" />
+            <div>
+              <div className="text-sm font-medium text-gray-900">{cleanGuestName(idea.guest)}</div>
+              <div className="text-xs text-gray-500 truncate max-w-[280px]">
+                {idea.episode_title}
+              </div>
+            </div>
+          </div>
+
+          <a
+            href={idea.youtube_deep_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+          >
+            <YouTubeIcon />
+            <span>Play in YouTube</span>
+            <span className="text-gray-400">@ {idea.timestamp}</span>
+          </a>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -438,8 +485,8 @@ function ViewIndicator({
   };
 
   return (
-    <div className="absolute top-20 left-4 z-40 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2">
-      <div className="flex items-center gap-2 text-sm">
+    <div className="absolute top-[140px] md:top-20 left-4 z-40 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-3 md:px-4 py-1.5 md:py-2">
+      <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
         <button
           onClick={onBackToClusters}
           className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
@@ -452,7 +499,7 @@ function ViewIndicator({
             <span className="text-gray-300">/</span>
             <button
               onClick={level !== "topIdeas" ? onBackToTopIdeas : undefined}
-              className={`truncate max-w-[200px] transition-colors ${
+              className={`truncate max-w-[100px] md:max-w-[200px] transition-colors ${
                 level === "topIdeas"
                   ? "text-gray-900 font-medium"
                   : "text-gray-500 hover:text-gray-900 cursor-pointer"
@@ -467,7 +514,7 @@ function ViewIndicator({
         {level === "connectedIdeas" && ideaTitle && (
           <>
             <span className="text-gray-300">/</span>
-            <span className="text-gray-900 font-medium" title={ideaTitle}>
+            <span className="text-gray-900 font-medium truncate max-w-[80px] md:max-w-none" title={ideaTitle}>
               {truncateTitle(ideaTitle)}
             </span>
           </>
@@ -1298,32 +1345,6 @@ function IdeaGraphInner() {
 
   return (
     <div className="h-screen w-screen relative">
-      {/* Mobile: Message to view on desktop */}
-      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div className="text-6xl mb-6">🌌</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-3">
-          Best Viewed on Desktop
-        </h2>
-        <p className="text-gray-600 mb-6 max-w-sm">
-          The Idea Constellation is an interactive graph that works best on larger screens.
-          Explore clusters, connections, and ideas with full navigation.
-        </p>
-        <div className="flex gap-3">
-          <a
-            href="/search"
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-          >
-            Try Search
-          </a>
-          <a
-            href="/how-it-works"
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-          >
-            How it Works
-          </a>
-        </div>
-      </div>
-
       {/* Desktop: Additional Controls (positioned after shared navigation) */}
       <div className="hidden md:flex fixed top-4 left-[640px] right-4 z-40 items-center gap-3">
         {/* Stats and Filter */}
@@ -1345,6 +1366,30 @@ function IdeaGraphInner() {
 
         {/* Legend - spans remaining width */}
         <Legend clusters={graphData?.clusters || []} />
+      </div>
+
+      {/* Mobile: Controls bar below navigation */}
+      <div className="md:hidden fixed top-20 left-4 right-4 z-40">
+        <div className="bg-white rounded-full shadow-lg px-3 h-10 flex items-center justify-between">
+          {/* Stats */}
+          <span className="text-xs text-gray-500">
+            {visibleIdeaCount} ideas
+          </span>
+          {/* Filter */}
+          {graphData && (
+            <CompanyFilter
+              companies={availableCompanies}
+              selected={selectedCompanies}
+              onChange={setSelectedCompanies}
+              isOpen={isFilterOpen}
+              setIsOpen={setIsFilterOpen}
+            />
+          )}
+        </div>
+        {/* Mobile hint */}
+        <p className="text-[10px] text-gray-400 text-center mt-2">
+          Pinch to zoom • Drag to pan • Tap clusters to explore
+        </p>
       </div>
 
       {/* Selected Idea Panel */}

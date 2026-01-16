@@ -79,11 +79,33 @@ function PipelineNode({ data }: NodeProps) {
   useEffect(() => {
     if (showDetails && nodeRef.current) {
       const rect = nodeRef.current.getBoundingClientRect();
+      // Position popup below node, but check if it would go off screen
+      const viewportHeight = window.innerHeight;
+      const popupHeight = 300; // Approximate height
+      const top = rect.bottom + 12;
+      const adjustedTop = top + popupHeight > viewportHeight ? rect.top - popupHeight - 12 : top;
+
       setPopupPosition({
-        top: rect.bottom + 12,
-        left: rect.left + rect.width / 2,
+        top: adjustedTop,
+        left: Math.max(160, Math.min(rect.left + rect.width / 2, window.innerWidth - 160)),
       });
     }
+  }, [showDetails]);
+
+  // Close popup when clicking outside (for mobile)
+  useEffect(() => {
+    if (!showDetails) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (nodeRef.current && !nodeRef.current.contains(e.target as HTMLElement)) {
+        setShowDetails(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [showDetails]);
 
   return (
@@ -92,6 +114,7 @@ function PipelineNode({ data }: NodeProps) {
       className="relative group"
       onMouseEnter={() => setShowDetails(true)}
       onMouseLeave={() => setShowDetails(false)}
+      onClick={() => setShowDetails(!showDetails)}
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />
       <Handle type="target" position={Position.Top} id="top" className="opacity-0" />
@@ -117,7 +140,8 @@ function PipelineNode({ data }: NodeProps) {
         {/* Expand indicator */}
         {nodeData.techDetails && (
           <div className="mt-2 text-[10px] text-gray-400 flex items-center gap-1">
-            <span>Hover for details</span>
+            <span className="hidden md:inline">Hover for details</span>
+            <span className="md:hidden">Tap for details</span>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -849,33 +873,8 @@ function HowItWorksInner() {
 
   return (
     <div className="h-screen w-screen relative bg-gray-50">
-      {/* Mobile: Message to view on desktop */}
-      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div className="text-6xl mb-6">🖥️</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-3">
-          Best Viewed on Desktop
-        </h2>
-        <p className="text-gray-600 mb-6 max-w-sm">
-          This interactive pipeline diagram requires a larger screen to explore properly.
-          Hover over nodes to see technical details.
-        </p>
-        <div className="flex gap-3">
-          <a
-            href="/"
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-          >
-            View Ideas
-          </a>
-          <a
-            href="/search"
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-          >
-            Search
-          </a>
-        </div>
-      </div>
-
-      {/* Desktop: Pipeline Toggle - positioned next to shared navigation */}
+      {/* Pipeline Toggle - responsive positioning */}
+      {/* Desktop: next to navigation */}
       <div className="hidden md:block fixed top-4 left-[640px] z-50">
         <div className="bg-white rounded-full shadow-lg px-2 h-12 flex items-center gap-1">
           <button
@@ -899,6 +898,36 @@ function HowItWorksInner() {
             Idea Graph Pipeline
           </button>
         </div>
+      </div>
+
+      {/* Mobile: below navigation */}
+      <div className="md:hidden fixed top-20 left-4 right-4 z-50">
+        <div className="bg-white rounded-full shadow-lg px-2 h-10 flex items-center justify-center gap-1">
+          <button
+            onClick={() => handleViewChange("search")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              view === "search"
+                ? "bg-gray-900 text-white"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Search Pipeline
+          </button>
+          <button
+            onClick={() => handleViewChange("ideas")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              view === "ideas"
+                ? "bg-gray-900 text-white"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Idea Graph Pipeline
+          </button>
+        </div>
+        {/* Mobile hint */}
+        <p className="text-[10px] text-gray-400 text-center mt-2">
+          Pinch to zoom • Drag to pan • Tap nodes for details
+        </p>
       </div>
 
       {/* Desktop: Legend + Stats - side by side */}
