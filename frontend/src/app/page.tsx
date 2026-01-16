@@ -495,16 +495,16 @@ function Legend({ clusters }: { clusters: ClusterInfo[] }) {
 
   return (
     <div
-      className="bg-white rounded-full shadow-lg h-12 flex items-center overflow-hidden px-4"
+      className="bg-white rounded-full shadow-lg h-12 flex items-center overflow-hidden px-4 cursor-pointer"
       style={{
         flex: isExpanded ? "1 1 0" : "0 0 105px",
         minWidth: isExpanded ? 0 : "105px",
         transition: `flex 400ms ${springEase}, min-width 400ms ${springEase}`,
       }}
+      onClick={() => setIsExpanded(!isExpanded)}
     >
       {/* Toggle Button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
+      <div
         className="flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 transition-colors flex-shrink-0"
         title={isExpanded ? "Collapse legend" : "Expand legend"}
       >
@@ -521,7 +521,7 @@ function Legend({ clusters }: { clusters: ClusterInfo[] }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
         <span>Legend</span>
-      </button>
+      </div>
 
       {/* Expanded Content */}
       <div
@@ -532,6 +532,7 @@ function Legend({ clusters }: { clusters: ClusterInfo[] }) {
           transition: `opacity 250ms ease-out, transform 400ms ${springEase}`,
           pointerEvents: isExpanded ? "auto" : "none",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Connections */}
         <div className="flex items-center gap-4 flex-shrink-0">
@@ -616,7 +617,7 @@ function CompanyFilter({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full transition-colors ${
+        className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full transition-colors cursor-pointer ${
           selected.length > 0
             ? "bg-blue-100 text-blue-700"
             : "text-gray-600 hover:bg-gray-100"
@@ -821,11 +822,16 @@ function IdeaGraphInner() {
       // Level 1: All companies from all ideas
       relevantIdeas = graphData.ideas;
     } else if (viewLevel === "topIdeas" && focusedCluster) {
-      // Level 2: Only companies from visible top ideas
+      // Level 2: Top 20 ideas by connection count
       const clusterIdeas = graphData.ideas.filter(i => i.cluster_id === focusedCluster.id);
-      const topIdeaIds = new Set(focusedCluster.top_idea_ids);
-      const topIdeas = clusterIdeas.filter(i => topIdeaIds.has(i.id));
-      relevantIdeas = topIdeas.length > 0 ? topIdeas : clusterIdeas.slice(0, 8);
+      const connCounts = new Map<string, number>();
+      graphData.connections.forEach(conn => {
+        connCounts.set(conn.source, (connCounts.get(conn.source) || 0) + 1);
+        connCounts.set(conn.target, (connCounts.get(conn.target) || 0) + 1);
+      });
+      relevantIdeas = [...clusterIdeas]
+        .sort((a, b) => (connCounts.get(b.id) || 0) - (connCounts.get(a.id) || 0))
+        .slice(0, 20);
     } else if (viewLevel === "connectedIdeas" && focusedIdea) {
       // Level 3: Center idea + its connected ideas
       const connectedIdeas = getConnectedIdeas(focusedIdea.id);
@@ -853,11 +859,9 @@ function IdeaGraphInner() {
       // Level 1: Show total ideas (filtered if company filter active)
       return baseIdeas.length;
     } else if (viewLevel === "topIdeas" && focusedCluster) {
-      // Level 2: Show count of top ideas in focused cluster
+      // Level 2: Top 20 ideas by connection count
       const clusterIdeas = baseIdeas.filter(i => i.cluster_id === focusedCluster.id);
-      const topIdeaIds = new Set(focusedCluster.top_idea_ids);
-      const topIdeas = clusterIdeas.filter(i => topIdeaIds.has(i.id));
-      return topIdeas.length > 0 ? topIdeas.length : Math.min(clusterIdeas.length, 8);
+      return Math.min(clusterIdeas.length, 20);
     } else if (viewLevel === "connectedIdeas" && focusedIdea) {
       // Level 3: Center idea + connected ideas
       const connectedIdeas = getConnectedIdeas(focusedIdea.id);
@@ -889,10 +893,9 @@ function IdeaGraphInner() {
       const offsetX = -((cols - 1) * spacingX) / 2;
       const offsetY = -spacingY / 2;
 
-      // Get top ideas for this cluster and sort by connection count (same as level 2)
-      const topIdeas = (cluster.top_idea_ids || [])
-        .map(id => ideasById.get(id))
-        .filter((idea): idea is IdeaNodeData => idea !== undefined)
+      // Get ALL cluster ideas and sort by connection count (ensures consistency with level 2)
+      const clusterIdeas = Array.from(ideasById.values()).filter(idea => idea.cluster_id === cluster.id);
+      const topIdeas = clusterIdeas
         .sort((a, b) => (connectionCounts.get(b.id) || 0) - (connectionCounts.get(a.id) || 0))
         .slice(0, 5);
 
@@ -914,25 +917,21 @@ function IdeaGraphInner() {
     ideas: IdeaNodeData[],
     cluster: ClusterInfo,
     colorMap: Map<string, string>,
-    connections: IdeaEdgeData[]
+    connections: IdeaEdgeData[],
+    allConnections: IdeaEdgeData[]  // All connections for global ranking
   ): Node[] => {
     const ideaNodes: Node[] = [];
     const n = ideas.length;
     if (n === 0) return [];
 
-    // Count connections per idea
+    // Count TOTAL connections per idea (not just visible ones) for ranking
     const connectionCounts = new Map<string, number>();
-    ideas.forEach(idea => connectionCounts.set(idea.id, 0));
-    connections.forEach(conn => {
-      if (connectionCounts.has(conn.source)) {
-        connectionCounts.set(conn.source, (connectionCounts.get(conn.source) || 0) + 1);
-      }
-      if (connectionCounts.has(conn.target)) {
-        connectionCounts.set(conn.target, (connectionCounts.get(conn.target) || 0) + 1);
-      }
+    allConnections.forEach(conn => {
+      connectionCounts.set(conn.source, (connectionCounts.get(conn.source) || 0) + 1);
+      connectionCounts.set(conn.target, (connectionCounts.get(conn.target) || 0) + 1);
     });
 
-    // Sort ideas by connection count (descending)
+    // Sort ideas by total connection count (descending)
     const sortedIdeas = [...ideas].sort((a, b) => {
       return (connectionCounts.get(b.id) || 0) - (connectionCounts.get(a.id) || 0);
     });
@@ -1109,20 +1108,25 @@ function IdeaGraphInner() {
         ? filteredIdeas.filter((i) => i.cluster_id === focusedCluster.id)
         : graphData.ideas.filter((i) => i.cluster_id === focusedCluster.id);
 
-      // Try to show top ideas first, then fall back to any cluster ideas
-      const topIdeaIds = new Set(focusedCluster.top_idea_ids);
-      const topIdeas = clusterIdeas.filter((i) => topIdeaIds.has(i.id));
+      // Sort all cluster ideas by connection count and take top 20
+      // (ensures consistency with level 1 cards)
+      const allConnCounts = new Map<string, number>();
+      graphData.connections.forEach(conn => {
+        allConnCounts.set(conn.source, (allConnCounts.get(conn.source) || 0) + 1);
+        allConnCounts.set(conn.target, (allConnCounts.get(conn.target) || 0) + 1);
+      });
 
-      const ideasToShow = topIdeas.length > 0
-        ? topIdeas
-        : clusterIdeas.slice(0, 8);
+      const ideasToShow = [...clusterIdeas]
+        .sort((a, b) => (allConnCounts.get(b.id) || 0) - (allConnCounts.get(a.id) || 0))
+        .slice(0, 20);
 
-      // Filter connections to only those between visible ideas
+      // Filter connections to only those between visible ideas (for drawing edges)
       const visibleIds = new Set(ideasToShow.map((i) => i.id));
       const relevantConnections = graphData.connections.filter(
         (conn) => visibleIds.has(conn.source) && visibleIds.has(conn.target)
       );
-      newNodes = layoutTopIdeas(ideasToShow, focusedCluster, colorMap, relevantConnections);
+      // Pass all connections for global ranking, relevant connections for edges
+      newNodes = layoutTopIdeas(ideasToShow, focusedCluster, colorMap, relevantConnections, graphData.connections);
 
       // Build position map for calculating nearest handles
       const positionMap = new Map(newNodes.map((n) => [n.id, n.position]));
