@@ -445,7 +445,7 @@ retriever.index(corpus_tokens)`,
   {
     id: "rrf",
     type: "pipeline",
-    position: { x: 1100, y: 300 },
+    position: { x: 1220, y: 300 },
     data: {
       label: "RRF Fusion",
       description: "Reciprocal Rank Fusion combines both result sets",
@@ -467,7 +467,7 @@ retriever.index(corpus_tokens)`,
   {
     id: "sponsor-filter",
     type: "pipeline",
-    position: { x: 1420, y: 300 },
+    position: { x: 1540, y: 300 },
     data: {
       label: "Sponsor Filter",
       description: "Remove sponsor/ad content from results (enabled by default)",
@@ -490,7 +490,7 @@ if exclude_sponsors:
   {
     id: "reranker",
     type: "pipeline",
-    position: { x: 1740, y: 300 },
+    position: { x: 1860, y: 300 },
     data: {
       label: "BGE Reranker (Optional)",
       description: "Cross-encoder reranking for precision. User-toggleable in UI.",
@@ -518,7 +518,7 @@ return candidates[:15]  # bypass`,
   {
     id: "results",
     type: "output",
-    position: { x: 2060, y: 300 },
+    position: { x: 2180, y: 300 },
     data: {
       label: "Search Results",
       icon: "✅",
