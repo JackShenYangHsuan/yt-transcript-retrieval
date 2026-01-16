@@ -3,10 +3,6 @@ services:
     name: lenny-search-api
     runtime: docker
     repo: https://github.com/JackShenYangHsuan/yt-transcript-retrieval
-    buildCommand: |
-      apt-get update && apt-get install -y git-lfs
-      git lfs install
-      git lfs pull
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     region: oregon
@@ -20,7 +16,9 @@ services:
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: USE_RERANKER
-        value: "true"  # Re-enabled with Qdrant Cloud (~1.2-1.7GB total)
+        value: "true"
+      - key: RERANKER_MODEL
+        value: "BAAI/bge-reranker-base"  # Smaller model (~400MB vs 1.2GB)
       - key: BM25_LIGHTWEIGHT_MODE
         value: "true"  # Lightweight mode to reduce memory
       - key: QDRANT_URL
