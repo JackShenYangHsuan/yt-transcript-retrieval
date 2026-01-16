@@ -13,6 +13,8 @@ services:
     plan: standard  # $25/mo, always-on
     healthCheckPath: /health
     envVars:
+      - key: DATA_DIR_OVERRIDE
+        value: /app/data
       - key: EMBEDDING_PROVIDER
         value: openai
       - key: EMBEDDING_MODEL

@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # OpenAI API
     openai_api_key: str = ""
 
+    # Data directory override (for Docker deployments)
+    data_dir_override: Optional[str] = None
+
     # Model settings
     embedding_model: str = "text-embedding-3-small"  # OpenAI model
     embedding_provider: str = "openai"  # "openai" or "local"
@@ -55,6 +58,8 @@ class Settings(BaseSettings):
     @property
     def data_dir(self) -> Path:
         """Get data directory."""
+        if self.data_dir_override:
+            return Path(self.data_dir_override)
         return self.project_root / "data"
 
     @property
