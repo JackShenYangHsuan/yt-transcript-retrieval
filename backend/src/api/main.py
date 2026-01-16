@@ -51,10 +51,12 @@ async def lifespan(app: FastAPI):
         api_key=settings.openai_api_key,
     )
 
-    # Initialize vector store
+    # Initialize vector store (use Qdrant Cloud if configured, else local)
     vector_store = PodcastVectorStore(
         collection_name=settings.collection_name,
-        path=settings.qdrant_path,
+        path=settings.qdrant_path if not settings.qdrant_url else None,
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key,
         embedding_dimension=embedder.dimension,
     )
 
