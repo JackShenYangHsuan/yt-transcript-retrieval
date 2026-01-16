@@ -58,8 +58,8 @@ async def lifespan(app: FastAPI):
         embedding_dimension=embedder.dimension,
     )
 
-    # Initialize BM25 retriever
-    bm25_retriever = BM25Retriever()
+    # Initialize BM25 retriever (lightweight mode saves ~100MB memory)
+    bm25_retriever = BM25Retriever(lightweight_mode=settings.bm25_lightweight_mode)
     bm25_path = settings.bm25_index_path
     if bm25_path.exists():
         bm25_retriever.load(bm25_path)

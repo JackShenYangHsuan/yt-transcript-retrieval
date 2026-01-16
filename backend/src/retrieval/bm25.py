@@ -14,11 +14,19 @@ from ..data.models import Chunk
 class BM25Retriever:
     """BM25 retriever for sparse keyword matching."""
 
-    def __init__(self):
-        """Initialize the BM25 retriever."""
+    def __init__(self, lightweight_mode: bool = False):
+        """Initialize the BM25 retriever.
+
+        Args:
+            lightweight_mode: If True, only load index without chunk metadata.
+                             This saves ~100MB+ memory but disables BM25-level filtering.
+        """
         self.retriever = None
         self.chunks: list[Chunk] = []
         self.chunk_id_to_idx: dict[str, int] = {}
+        self.lightweight_mode = lightweight_mode
+        # Lightweight mode: only store chunk_ids for mapping
+        self.chunk_ids: list[str] = []
 
     def build_index(self, chunks: list[Chunk]):
         """Build BM25 index from chunks."""
@@ -48,20 +56,38 @@ class BM25Retriever:
         topic_filter: str | None = None,
         exclude_sponsors: bool = True,
     ) -> list[dict]:
-        """Search using BM25."""
+        """Search using BM25.
+
+        In lightweight mode, returns only chunk_ids and scores (no filtering).
+        Filters are applied by the hybrid retriever using Qdrant.
+        """
         if self.retriever is None:
             raise ValueError("Index not built. Call build_index first.")
 
         # Tokenize query
         query_tokens = bm25s.tokenize([query])
 
-        # Get more results than needed for post-filtering
+        # Determine corpus size
+        corpus_size = len(self.chunk_ids) if self.lightweight_mode else len(self.chunks)
+
+        if self.lightweight_mode:
+            # Lightweight mode: return more results, filtering done later
+            fetch_k = top_k * 3
+            results, scores = self.retriever.retrieve(query_tokens, k=min(fetch_k, corpus_size))
+
+            # Return only chunk_ids and scores - no metadata
+            output = []
+            for idx, score in zip(results[0], scores[0]):
+                output.append({
+                    "chunk_id": self.chunk_ids[idx],
+                    "score": float(score),
+                })
+            return output
+
+        # Full mode: apply filters locally
         fetch_k = top_k * 3 if any([guest_filter, speaker_role_filter, topic_filter, exclude_sponsors]) else top_k
+        results, scores = self.retriever.retrieve(query_tokens, k=min(fetch_k, corpus_size))
 
-        # Search
-        results, scores = self.retriever.retrieve(query_tokens, k=min(fetch_k, len(self.chunks)))
-
-        # Build results with filtering
         output = []
         for idx, score in zip(results[0], scores[0]):
             chunk = self.chunks[idx]
@@ -136,16 +162,37 @@ class BM25Retriever:
         with open(path / "chunks.json", "w") as f:
             json.dump(chunks_data, f)
 
+        # Also save just chunk_ids for lightweight mode (fast loading)
+        chunk_ids = [chunk.chunk_id for chunk in self.chunks]
+        with open(path / "chunk_ids.json", "w") as f:
+            json.dump(chunk_ids, f)
+
         print(f"BM25 index saved to {path}")
 
     def load(self, path: Path):
-        """Load the BM25 index and chunks from disk."""
+        """Load the BM25 index and optionally chunks from disk."""
         path = Path(path)
 
         # Load BM25 index
         self.retriever = bm25s.BM25.load(str(path / "bm25_index"), load_corpus=False)
 
-        # Load chunks metadata
+        if self.lightweight_mode:
+            # Lightweight mode: only load chunk_ids for index mapping
+            # This saves ~100MB+ memory by not loading full chunk metadata
+            chunk_ids_path = path / "chunk_ids.json"
+            if chunk_ids_path.exists():
+                # Fast path: load pre-generated chunk_ids file
+                with open(chunk_ids_path) as f:
+                    self.chunk_ids = json.load(f)
+            else:
+                # Fallback: extract from chunks.json (slower, temporary memory spike)
+                with open(path / "chunks.json") as f:
+                    chunks_data = json.load(f)
+                self.chunk_ids = [data["chunk_id"] for data in chunks_data]
+            print(f"BM25 index loaded (lightweight) from {path} with {len(self.chunk_ids)} documents")
+            return
+
+        # Full mode: Load all chunk metadata
         with open(path / "chunks.json") as f:
             chunks_data = json.load(f)
 

@@ -24,6 +24,7 @@ class SearchFilters:
 def reciprocal_rank_fusion(
     results_lists: list[list[dict]],
     k: int = 60,
+    chunk_lookup: dict[str, dict] | None = None,
 ) -> list[dict]:
     """
     Combine multiple ranked lists using Reciprocal Rank Fusion.
@@ -33,6 +34,7 @@ def reciprocal_rank_fusion(
     Args:
         results_lists: List of ranked result lists, each containing dicts with 'chunk_id'
         k: RRF constant (default 60)
+        chunk_lookup: Optional dict to enrich results that only have chunk_id
 
     Returns:
         Fused and re-ranked results
@@ -50,17 +52,22 @@ def reciprocal_rank_fusion(
                 rrf_scores[chunk_id] += rrf_score
             else:
                 rrf_scores[chunk_id] = rrf_score
-                chunk_data[chunk_id] = result
+                # Use lookup to enrich sparse results, or use result directly
+                if chunk_lookup and chunk_id in chunk_lookup:
+                    chunk_data[chunk_id] = chunk_lookup[chunk_id]
+                elif len(result) > 2:  # Has more than just chunk_id and score
+                    chunk_data[chunk_id] = result
 
     # Sort by RRF score
     sorted_ids = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
 
-    # Build output with fused scores
+    # Build output with fused scores (only include chunks we have data for)
     output = []
     for chunk_id in sorted_ids:
-        result = chunk_data[chunk_id].copy()
-        result["rrf_score"] = rrf_scores[chunk_id]
-        output.append(result)
+        if chunk_id in chunk_data:
+            result = chunk_data[chunk_id].copy()
+            result["rrf_score"] = rrf_scores[chunk_id]
+            output.append(result)
 
     return output
 
@@ -117,19 +124,38 @@ class HybridRetriever:
         )
 
         # Sparse search (BM25)
+        # In lightweight mode, BM25 returns only chunk_ids without filtering
         bm25_results = self.bm25_retriever.search(
             query=query,
             top_k=self.bm25_top_k,
-            guest_filter=filters.guest,
-            speaker_role_filter=filters.speaker_role,
-            topic_filter=filters.topic,
-            exclude_sponsors=filters.exclude_sponsors,
+            guest_filter=filters.guest if not self.bm25_retriever.lightweight_mode else None,
+            speaker_role_filter=filters.speaker_role if not self.bm25_retriever.lightweight_mode else None,
+            topic_filter=filters.topic if not self.bm25_retriever.lightweight_mode else None,
+            exclude_sponsors=filters.exclude_sponsors if not self.bm25_retriever.lightweight_mode else False,
         )
+
+        # In lightweight mode, enrich BM25 results from Qdrant
+        chunk_lookup = None
+        if self.bm25_retriever.lightweight_mode and bm25_results:
+            # Get chunk_ids that aren't already in dense results
+            dense_ids = {r["chunk_id"] for r in dense_results}
+            bm25_only_ids = [r["chunk_id"] for r in bm25_results if r["chunk_id"] not in dense_ids]
+
+            if bm25_only_ids:
+                # Fetch from Qdrant with filters applied
+                chunk_lookup = self.vector_store.get_by_ids(
+                    chunk_ids=bm25_only_ids,
+                    guest_filter=filters.guest,
+                    speaker_role_filter=filters.speaker_role,
+                    topic_filter=filters.topic,
+                    exclude_sponsors=filters.exclude_sponsors,
+                )
 
         # RRF fusion
         fused_results = reciprocal_rank_fusion(
             [dense_results, bm25_results],
             k=60,
+            chunk_lookup=chunk_lookup,
         )
 
         # Return top fusion_top_k results

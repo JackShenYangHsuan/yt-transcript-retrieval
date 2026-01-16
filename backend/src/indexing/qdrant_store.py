@@ -224,6 +224,88 @@ class PodcastVectorStore:
             "status": info.status,
         }
 
+    def get_by_ids(
+        self,
+        chunk_ids: list[str],
+        guest_filter: str | None = None,
+        speaker_role_filter: str | None = None,
+        topic_filter: str | None = None,
+        exclude_sponsors: bool = True,
+    ) -> dict[str, dict]:
+        """Fetch chunks by IDs with optional filtering.
+
+        Returns a dict mapping chunk_id -> payload for efficient lookup.
+        """
+        if not chunk_ids:
+            return {}
+
+        # Build filter conditions
+        must_conditions = []
+
+        if guest_filter:
+            must_conditions.append(
+                FieldCondition(
+                    key="episode_guest",
+                    match=MatchValue(value=guest_filter),
+                )
+            )
+
+        if speaker_role_filter:
+            must_conditions.append(
+                FieldCondition(
+                    key="speaker_role",
+                    match=MatchValue(value=speaker_role_filter),
+                )
+            )
+
+        if topic_filter:
+            must_conditions.append(
+                FieldCondition(
+                    key="topics",
+                    match=MatchValue(value=topic_filter),
+                )
+            )
+
+        if exclude_sponsors:
+            must_conditions.append(
+                FieldCondition(
+                    key="is_sponsor_segment",
+                    match=MatchValue(value=False),
+                )
+            )
+
+        query_filter = Filter(must=must_conditions) if must_conditions else None
+
+        # Retrieve points by IDs
+        results = self.client.retrieve(
+            collection_name=self.collection_name,
+            ids=chunk_ids,
+            with_payload=True,
+        )
+
+        # Build lookup dict, applying filters
+        output = {}
+        for point in results:
+            payload = point.payload
+
+            # Apply filters if we have filter conditions
+            if query_filter:
+                if guest_filter and payload.get("episode_guest") != guest_filter:
+                    continue
+                if speaker_role_filter and payload.get("speaker_role") != speaker_role_filter:
+                    continue
+                if topic_filter and topic_filter not in payload.get("topics", []):
+                    continue
+                if exclude_sponsors and payload.get("is_sponsor_segment", False):
+                    continue
+
+            output[point.id] = {
+                "chunk_id": point.id,
+                **payload,
+            }
+
+        return output
+
     def list_guests(self) -> list[str]:
         """List all unique guests in the collection."""
         # Scroll through all points and collect unique guests

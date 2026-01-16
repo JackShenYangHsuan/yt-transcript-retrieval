@@ -21,6 +21,8 @@ services:
         value: text-embedding-3-small
       - key: USE_RERANKER
         value: "false"  # Disabled to stay under 2GB RAM limit
+      - key: BM25_LIGHTWEIGHT_MODE
+        value: "true"  # Don't load chunk metadata, saves ~100MB memory
       - key: OPENAI_API_KEY
         sync: false  # Set manually in Render dashboard
     disk:

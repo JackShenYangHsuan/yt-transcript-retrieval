@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     reranker_model: str = "BAAI/bge-reranker-large"
     use_reranker: bool = True  # Cross-encoder reranking for better accuracy
 
+    # Memory optimization
+    bm25_lightweight_mode: bool = False  # If True, BM25 only loads index, not chunk metadata (~100MB savings)
+
     # Chunking settings
     max_chunk_tokens: int = 512
     min_chunk_tokens: int = 100
