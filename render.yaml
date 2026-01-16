@@ -2,6 +2,11 @@ services:
   - type: web
     name: lenny-search-api
     runtime: docker
+    repo: https://github.com/JackShenYangHsuan/yt-transcript-retrieval
+    buildCommand: |
+      apt-get update && apt-get install -y git-lfs
+      git lfs install
+      git lfs pull
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
     region: oregon
