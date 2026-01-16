@@ -89,29 +89,23 @@ export default function Home() {
         </form>
 
         {/* Search Options */}
-        <div className="flex items-center justify-start mb-4">
+        <div className="flex items-center justify-start gap-3 mb-4">
           <button
             type="button"
             onClick={() => setUseReranker(!useReranker)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors ${
-              useReranker
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            className={`w-11 h-6 rounded-full relative transition-colors duration-200 ${
+              useReranker ? "bg-green-500" : "bg-gray-300"
             }`}
           >
             <div
-              className={`w-8 h-4 rounded-full relative transition-colors ${
-                useReranker ? "bg-white/30" : "bg-gray-300"
+              className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${
+                useReranker ? "right-0.5" : "left-0.5"
               }`}
-            >
-              <div
-                className={`absolute top-0.5 w-3 h-3 rounded-full transition-all ${
-                  useReranker ? "right-0.5 bg-white" : "left-0.5 bg-white"
-                }`}
-              />
-            </div>
-            <span>{useReranker ? "More accurate" : "Faster"}</span>
+            />
           </button>
+          <span className="text-sm text-gray-600">
+            {useReranker ? "More accurate (rerank on)" : "Faster (rerank off)"}
+          </span>
         </div>
 
         {/* Search Time */}
