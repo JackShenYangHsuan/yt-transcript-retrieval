@@ -20,9 +20,9 @@ services:
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: USE_RERANKER
-        value: "false"  # Disabled to stay under 2GB RAM limit
+        value: "true"  # Re-enabled with Qdrant Cloud (~1.2-1.7GB total)
       - key: BM25_LIGHTWEIGHT_MODE
-        value: "true"  # Don't load chunk metadata, saves ~100MB memory
+        value: "false"  # Full mode - load all chunk metadata
       - key: QDRANT_URL
         value: https://5b26d6b2-5bd8-4dfe-8fb2-b551bc039ab6.us-west-1-0.aws.cloud.qdrant.io
       - key: QDRANT_API_KEY
