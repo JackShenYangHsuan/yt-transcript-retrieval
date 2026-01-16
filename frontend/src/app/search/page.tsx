@@ -10,6 +10,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchTime, setSearchTime] = useState<number | null>(null);
+  const [useReranker, setUseReranker] = useState(true);
 
   const handleClear = () => {
     setQuery("");
@@ -27,7 +28,7 @@ export default function Home() {
     setSearchTime(null);
 
     try {
-      const data = await searchPodcasts(query, undefined, 15, false);
+      const data = await searchPodcasts(query, undefined, 15, useReranker);
       setResults(data.results);
       setSearchTime(data.query_time_ms);
     } catch (error) {
@@ -50,7 +51,7 @@ export default function Home() {
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-6">
+        <form onSubmit={handleSearch} className="mb-4">
           <div className="relative">
             <input
               type="text"
@@ -86,6 +87,19 @@ export default function Home() {
             </button>
           </div>
         </form>
+
+        {/* Search Options */}
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={useReranker}
+              onChange={(e) => setUseReranker(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+            />
+            <span className="text-sm text-gray-600">AI Reranking</span>
+          </label>
+        </div>
 
         {/* Search Time */}
         {searchTime !== null && (
