@@ -16,11 +16,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/src ./src
 COPY backend/run.py .
 
-# Copy pre-built indexes and data
-COPY data/qdrant ./data/qdrant
-COPY data/bm25_index ./data/bm25_index
-COPY data/transcripts ./data/transcripts
-COPY data/ideas ./data/ideas
+# Copy pre-built indexes and data to staging location
+# (Render's disk mount will override /app/data at runtime)
+COPY data/qdrant ./data_staging/qdrant
+COPY data/bm25_index ./data_staging/bm25_index
+COPY data/transcripts ./data_staging/transcripts
+COPY data/ideas ./data_staging/ideas
+
+# Copy startup script
+COPY start.sh .
+RUN chmod +x start.sh
 
 # Expose port (Render sets PORT env var)
 EXPOSE 8000
@@ -29,5 +34,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application (use PORT env var from Render)
-CMD python -m uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Run startup script which copies data then starts app
+CMD ["./start.sh"]
