@@ -26,6 +26,7 @@ import {
   IdeaEdge as IdeaEdgeData,
 } from "@/lib/api";
 import { getBestLogoUrl, getBestCompany, extractCompaniesFromTitle, getCompanyLogoUrl, cleanGuestName } from "@/lib/companyLogo";
+import { RESET_CONSTELLATION_EVENT } from "@/components/Navigation";
 
 // View levels - now includes connectedIdeas
 type ViewLevel = "clusters" | "topIdeas" | "connectedIdeas" | "allIdeas";

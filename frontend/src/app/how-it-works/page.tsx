@@ -254,21 +254,23 @@ const searchNodes: Node[] = [
     position: { x: 200, y: 60 },
     data: {
       label: "Transcript Parser",
-      description: "Parse markdown transcripts into structured speaker turns with timestamps",
+      description: "Parse transcripts into speaker turns, detect & tag sponsor content",
       icon: "📄",
       color: "#6366f1",
       techDetails: [
         { label: "Input", value: "transcript.md files" },
         { label: "Output", value: "ParsedEpisode with SpeakerTurns" },
         { label: "Extracts", value: "speaker, role (host/guest), timestamp, content" },
-        { label: "Detects", value: "Sponsor segments via keyword matching" },
+        { label: "Sponsor Detection", value: "30+ regex patterns" },
+        { label: "Patterns", value: ".com/lenny links, $X off, known sponsors" },
+        { label: "Tagged", value: "chunk_type='sponsor' for filtering" },
       ],
-      codeSnippet: `turn = SpeakerTurn(
-  speaker="Brian Chesky",
-  role="guest",
-  timestamp_seconds=1234,
-  content="..."
-)`,
+      codeSnippet: `SPONSOR_PATTERNS = [
+  r"\\.com/lenny",   # promo links
+  r"\\$\\d+.*off",   # discounts
+  r"flatfile\\.com", # known sponsors
+]
+is_sponsor = any(re.search(p, text))`,
     },
   },
 
@@ -443,7 +445,7 @@ retriever.index(corpus_tokens)`,
   {
     id: "rrf",
     type: "pipeline",
-    position: { x: 1220, y: 300 },
+    position: { x: 1100, y: 300 },
     data: {
       label: "RRF Fusion",
       description: "Reciprocal Rank Fusion combines both result sets",
@@ -461,11 +463,34 @@ retriever.index(corpus_tokens)`,
     },
   },
 
+  // Sponsor Filter
+  {
+    id: "sponsor-filter",
+    type: "pipeline",
+    position: { x: 1420, y: 300 },
+    data: {
+      label: "Sponsor Filter",
+      description: "Remove sponsor/ad content from results (enabled by default)",
+      icon: "🚫",
+      color: "#ef4444",
+      techDetails: [
+        { label: "Filter", value: "exclude_sponsors=true (default)" },
+        { label: "Removes", value: "chunk_type='sponsor' entries" },
+        { label: "Detected", value: "765 sponsor chunks in index" },
+        { label: "Prevents", value: "Duplicate ad reads across episodes" },
+      ],
+      codeSnippet: `# Default filter excludes sponsors
+if exclude_sponsors:
+    results = [r for r in results
+               if r.chunk_type != "sponsor"]`,
+    },
+  },
+
   // Reranker (Optional - user toggle)
   {
     id: "reranker",
     type: "pipeline",
-    position: { x: 1520, y: 300 },
+    position: { x: 1740, y: 300 },
     data: {
       label: "BGE Reranker (Optional)",
       description: "Cross-encoder reranking for precision. User-toggleable in UI.",
@@ -493,7 +518,7 @@ return candidates[:15]  # bypass`,
   {
     id: "results",
     type: "output",
-    position: { x: 1820, y: 300 },
+    position: { x: 2060, y: 300 },
     data: {
       label: "Search Results",
       icon: "✅",
@@ -524,11 +549,13 @@ const searchEdges: Edge[] = [
   { id: "e8", source: "query", target: "bm25-retrieval", type: "step", animated: true, style: { stroke: "#f97316", strokeWidth: 2 }, markerEnd: arrowMarker("#f97316") },
   { id: "e9", source: "qdrant", target: "dense-retrieval", type: "step", style: { stroke: "#8b5cf6", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#8b5cf6") },
   { id: "e10", source: "bm25-index", target: "bm25-retrieval", type: "step", style: { stroke: "#8b5cf6", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#8b5cf6") },
-  { id: "e11", source: "dense-retrieval", target: "rrf", type: "step", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
-  { id: "e12", source: "bm25-retrieval", target: "rrf", type: "step", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
+  { id: "e11", source: "dense-retrieval", target: "rrf", type: "default", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
+  { id: "e12", source: "bm25-retrieval", target: "rrf", type: "default", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
+  // Sponsor filter (removes ad content)
+  { id: "e13", source: "rrf", target: "sponsor-filter", type: "default", style: { stroke: "#ef4444", strokeWidth: 2 }, markerEnd: arrowMarker("#ef4444") },
   // Reranker path (optional - indicated by node label)
-  { id: "e13", source: "rrf", target: "reranker", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
-  { id: "e14", source: "reranker", target: "results", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
+  { id: "e13a", source: "sponsor-filter", target: "reranker", type: "default", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
+  { id: "e14", source: "reranker", target: "results", type: "default", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
 ];
 
 // ============================================================================

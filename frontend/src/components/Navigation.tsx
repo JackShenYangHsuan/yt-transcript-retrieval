@@ -1,8 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+
+// Custom event for resetting constellation view
+export const RESET_CONSTELLATION_EVENT = "reset-constellation-view";
 
 const tabs = [
   { name: "Idea Constellation", path: "/" },
@@ -12,8 +15,17 @@ const tabs = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+
+  // Handle logo click - reset constellation view if already on home
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent(RESET_CONSTELLATION_EVENT));
+    }
+  };
 
   // Update indicator position when route changes
   useEffect(() => {
@@ -28,9 +40,10 @@ export default function Navigation() {
 
   return (
     <div className="fixed top-4 left-4 z-50 flex items-center gap-3">
-      {/* Logo - navigates to Idea Constellation */}
+      {/* Logo - navigates to Idea Constellation (resets view if already there) */}
       <Link
         href="/"
+        onClick={handleLogoClick}
         className="flex items-center gap-2 bg-white rounded-full shadow-lg px-3 h-12 hover:shadow-xl transition-shadow flex-shrink-0"
       >
         <img
