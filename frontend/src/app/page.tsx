@@ -1345,6 +1345,23 @@ function IdeaGraphInner() {
 
   return (
     <div className="h-screen w-screen relative">
+      {/* Mobile: Message to use desktop */}
+      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
+        <div className="text-6xl mb-6">🌌</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-3">
+          Use Desktop for Idea Constellation
+        </h2>
+        <p className="text-gray-600 mb-6 max-w-sm">
+          The interactive idea graph works best on larger screens. Try Search on mobile instead.
+        </p>
+        <a
+          href="/search"
+          className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+        >
+          Go to Search
+        </a>
+      </div>
+
       {/* Desktop: Additional Controls (positioned after shared navigation) */}
       <div className="hidden md:flex fixed top-4 left-[640px] right-4 z-40 items-center gap-3">
         {/* Stats and Filter */}
@@ -1366,30 +1383,6 @@ function IdeaGraphInner() {
 
         {/* Legend - spans remaining width */}
         <Legend clusters={graphData?.clusters || []} />
-      </div>
-
-      {/* Mobile: Controls bar below navigation */}
-      <div className="md:hidden fixed top-20 left-4 right-4 z-40">
-        <div className="bg-white rounded-full shadow-lg px-3 h-10 flex items-center justify-between">
-          {/* Stats */}
-          <span className="text-xs text-gray-500">
-            {visibleIdeaCount} ideas
-          </span>
-          {/* Filter */}
-          {graphData && (
-            <CompanyFilter
-              companies={availableCompanies}
-              selected={selectedCompanies}
-              onChange={setSelectedCompanies}
-              isOpen={isFilterOpen}
-              setIsOpen={setIsFilterOpen}
-            />
-          )}
-        </div>
-        {/* Mobile hint */}
-        <p className="text-[10px] text-gray-400 text-center mt-2">
-          Pinch to zoom • Drag to pan • Tap clusters to explore
-        </p>
       </div>
 
       {/* Selected Idea Panel */}
