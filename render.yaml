@@ -22,7 +22,7 @@ services:
       - key: USE_RERANKER
         value: "true"  # Re-enabled with Qdrant Cloud (~1.2-1.7GB total)
       - key: BM25_LIGHTWEIGHT_MODE
-        value: "false"  # Full mode - load all chunk metadata
+        value: "true"  # Lightweight mode to reduce memory
       - key: QDRANT_URL
         value: https://5b26d6b2-5bd8-4dfe-8fb2-b551bc039ab6.us-west-1-0.aws.cloud.qdrant.io
       - key: QDRANT_API_KEY
