@@ -18,7 +18,7 @@ services:
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: USE_RERANKER
-        value: "true"
+        value: "false"  # Disabled to stay under 2GB RAM limit
       - key: OPENAI_API_KEY
         sync: false  # Set manually in Render dashboard
     disk:
