@@ -376,16 +376,17 @@ embedding = response.data[0].embedding`,
     type: "pipeline",
     position: { x: 550, y: 370 },
     data: {
-      label: "Qdrant Vector Store",
-      description: "File-based vector database with metadata filtering",
-      icon: "🗄️",
+      label: "Qdrant Cloud",
+      description: "Managed vector database with metadata filtering",
+      icon: "☁️",
       color: "#8b5cf6",
       techDetails: [
-        { label: "Mode", value: "Local file-based (no server)" },
+        { label: "Mode", value: "Qdrant Cloud (managed)" },
         { label: "Collection", value: "podcast_chunks" },
         { label: "Distance", value: "Cosine similarity" },
         { label: "Payload", value: "guest, speaker_role, topics, timestamps" },
         { label: "Filters", value: "Qdrant FieldCondition on metadata" },
+        { label: "Benefit", value: "Low memory footprint (~50MB vs 2.5GB local)" },
       ],
     },
   },
@@ -511,14 +512,14 @@ if exclude_sponsors:
     },
   },
 
-  // Reranker (Optional - user toggle)
+  // Reranker (enabled by default, user-toggleable)
   {
     id: "reranker",
     type: "pipeline",
     position: { x: 1860, y: 300 },
     data: {
-      label: "BGE Reranker (Optional)",
-      description: "Cross-encoder reranking for precision. User-toggleable in UI.",
+      label: "BGE Reranker",
+      description: "Cross-encoder reranking for precision. Enabled by default, toggleable in UI.",
       icon: "🏆",
       color: "#22c55e",
       techDetails: [
@@ -526,16 +527,15 @@ if exclude_sponsors:
         { label: "Type", value: "Cross-encoder (query + doc)" },
         { label: "Input", value: "20 candidates from RRF" },
         { label: "Output", value: "Top 15 reranked results" },
-        { label: "RAM", value: "~500MB (local model)" },
-        { label: "Toggle", value: "User controls via UI switch" },
+        { label: "Default", value: "Enabled (user can toggle off)" },
         { label: "Latency", value: "+2-4s when enabled" },
       ],
-      codeSnippet: `# Optional: skip if user toggled off
+      codeSnippet: `# Enabled by default, user can toggle off
 if include_reranking and reranker:
     pairs = [[query, doc] for doc in candidates]
     scores = reranker.compute_score(pairs)
     return sorted(results, key=score)[:15]
-return candidates[:15]  # bypass`,
+return candidates[:15]  # bypass if toggled off`,
     },
   },
 
@@ -952,12 +952,12 @@ function HowItWorksInner() {
               <div className="font-mono text-gray-900">~300</div>
               <div className="text-gray-500">Chunks:</div>
               <div className="font-mono text-gray-900">~28k</div>
+              <div className="text-gray-500">Vector DB:</div>
+              <div className="font-mono text-gray-900">Qdrant Cloud</div>
               <div className="text-gray-500">Embedding:</div>
-              <div className="font-mono text-gray-900">OpenAI API</div>
-              <div className="text-gray-500">Dimension:</div>
-              <div className="font-mono text-gray-900">1536</div>
+              <div className="font-mono text-gray-900">1536-dim</div>
               <div className="text-gray-500">Reranker:</div>
-              <div className="font-mono text-gray-900">Optional</div>
+              <div className="font-mono text-gray-900">On (toggle)</div>
               <div className="text-gray-500">Latency:</div>
               <div className="font-mono text-gray-900">~1s / ~4s</div>
             </div>
