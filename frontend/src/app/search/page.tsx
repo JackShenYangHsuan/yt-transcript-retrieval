@@ -9,7 +9,6 @@ export default function Home() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [useReranking, setUseReranking] = useState(false);
   const [searchTime, setSearchTime] = useState<number | null>(null);
 
   const handleClear = () => {
@@ -28,7 +27,7 @@ export default function Home() {
     setSearchTime(null);
 
     try {
-      const data = await searchPodcasts(query, undefined, 15, useReranking);
+      const data = await searchPodcasts(query, undefined, 15, false);
       setResults(data.results);
       setSearchTime(data.query_time_ms);
     } catch (error) {
@@ -81,32 +80,14 @@ export default function Home() {
           </div>
         </form>
 
-        {/* Reranking Toggle */}
-        <div className="flex items-center justify-between mb-8">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={useReranking}
-                onChange={(e) => setUseReranking(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
-              <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
-            </div>
-            <span className="text-sm text-gray-600">
-              {useReranking ? "More accurate search" : "Faster search"}
-            </span>
-            <span className="text-xs text-gray-400">
-              (re-ranking {useReranking ? "on" : "off"})
-            </span>
-          </label>
-          {searchTime !== null && (
+        {/* Search Time */}
+        {searchTime !== null && (
+          <div className="flex justify-end mb-4">
             <span className="text-xs text-gray-400">
               {searchTime.toFixed(0)}ms
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Results */}
         {isLoading && (
