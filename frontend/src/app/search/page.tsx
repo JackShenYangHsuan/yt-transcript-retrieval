@@ -89,16 +89,29 @@ export default function Home() {
         </form>
 
         {/* Search Options */}
-        <div className="flex items-center justify-end gap-2 mb-4">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={useReranker}
-              onChange={(e) => setUseReranker(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-            />
-            <span className="text-sm text-gray-600">AI Reranking</span>
-          </label>
+        <div className="flex items-center justify-start mb-4">
+          <button
+            type="button"
+            onClick={() => setUseReranker(!useReranker)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors ${
+              useReranker
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <div
+              className={`w-8 h-4 rounded-full relative transition-colors ${
+                useReranker ? "bg-white/30" : "bg-gray-300"
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 w-3 h-3 rounded-full transition-all ${
+                  useReranker ? "right-0.5 bg-white" : "left-0.5 bg-white"
+                }`}
+              />
+            </div>
+            <span>{useReranker ? "More accurate" : "Faster"}</span>
+          </button>
         </div>
 
         {/* Search Time */}
