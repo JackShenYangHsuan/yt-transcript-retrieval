@@ -16,6 +16,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useRouter } from "next/navigation";
 
 // Inject styles to hide ReactFlow's default node styling
 function useReactFlowStyles() {
@@ -856,9 +857,18 @@ const ideaEdges: Edge[] = [
 // ============================================================================
 
 function HowItWorksInner() {
+  const router = useRouter();
   const [view, setView] = useState<PipelineView>("search");
   const { fitView } = useReactFlow();
   useReactFlowStyles(); // Inject custom styles to hide default node styling
+
+  // Redirect mobile users to /search
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768; // md breakpoint
+    if (isMobile) {
+      router.replace("/search");
+    }
+  }, [router]);
 
   const handleViewChange = useCallback(
     (newView: PipelineView) => {
@@ -873,23 +883,6 @@ function HowItWorksInner() {
 
   return (
     <div className="h-screen w-screen relative bg-gray-50">
-      {/* Mobile: Message to use desktop */}
-      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div className="text-6xl mb-6">🔧</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-3">
-          Use Desktop for How It Works
-        </h2>
-        <p className="text-gray-600 mb-6 max-w-sm">
-          The interactive pipeline diagram works best on larger screens. Try Search on mobile instead.
-        </p>
-        <a
-          href="/search"
-          className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-        >
-          Go to Search
-        </a>
-      </div>
-
       {/* Desktop: Pipeline Toggle - positioned next to shared navigation */}
       <div className="hidden md:block fixed top-4 left-[640px] z-50">
         <div className="bg-white rounded-full shadow-lg px-2 h-12 flex items-center gap-1">

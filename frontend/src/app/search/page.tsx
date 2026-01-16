@@ -42,6 +42,13 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-12">
+        {/* Mobile note about desktop features */}
+        <div className="md:hidden mb-4 px-3 py-2 bg-gray-50 rounded-lg text-center">
+          <p className="text-xs text-gray-500">
+            For <span className="font-medium">Idea Constellation</span> and <span className="font-medium">How It Works</span>, please use desktop for better experience.
+          </p>
+        </div>
+
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-6">
           <div className="relative">

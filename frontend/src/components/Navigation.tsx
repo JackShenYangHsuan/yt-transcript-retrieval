@@ -16,7 +16,6 @@ const tabs = [
 export default function Navigation() {
   const pathname = usePathname();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   // Handle logo click - reset constellation view if already on home
@@ -36,11 +35,6 @@ export default function Navigation() {
       const { offsetLeft, offsetWidth } = activeTab;
       setIndicatorStyle({ left: offsetLeft, width: offsetWidth });
     }
-  }, [pathname]);
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
   }, [pathname]);
 
   return (
@@ -92,13 +86,12 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - Simple logo only, no hamburger */}
       <div className="fixed top-4 left-4 right-4 z-50 md:hidden">
-        <div className="flex items-center justify-between bg-white rounded-full shadow-lg px-3 h-12">
+        <div className="flex items-center justify-center bg-white rounded-full shadow-lg px-3 h-12">
           {/* Logo */}
           <Link
-            href="/"
-            onClick={handleLogoClick}
+            href="/search"
             className="flex items-center gap-2"
           >
             <img
@@ -110,46 +103,7 @@ export default function Navigation() {
               Lenny&apos;s Podcast
             </span>
           </Link>
-
-          {/* Hamburger Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-gray-600 hover:text-gray-900"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
-          </button>
         </div>
-
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
-          <div className="mt-2 bg-white rounded-xl shadow-lg overflow-hidden">
-            {tabs.map((tab) => (
-              <Link
-                key={tab.path}
-                href={tab.path}
-                className={`block px-4 py-3 text-sm border-b border-gray-100 last:border-b-0 ${
-                  pathname === tab.path
-                    ? "bg-gray-900 text-white font-semibold"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {tab.name}
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
     </>
   );

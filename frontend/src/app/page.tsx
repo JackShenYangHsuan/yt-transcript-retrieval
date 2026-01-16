@@ -19,6 +19,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getIdeaGraph,
   IdeaNode as IdeaNodeData,
@@ -740,6 +741,7 @@ function CompanyFilter({
 
 // Main graph component
 function IdeaGraphInner() {
+  const router = useRouter();
   const [graphData, setGraphData] = useState<{
     ideas: IdeaNodeData[];
     connections: IdeaEdgeData[];
@@ -762,6 +764,14 @@ function IdeaGraphInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const { fitView } = useReactFlow();
+
+  // Redirect mobile users to /search
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768; // md breakpoint
+    if (isMobile) {
+      router.replace("/search");
+    }
+  }, [router]);
 
   // Listen for logo click to reset view to main clusters
   useEffect(() => {
@@ -1345,23 +1355,6 @@ function IdeaGraphInner() {
 
   return (
     <div className="h-screen w-screen relative">
-      {/* Mobile: Message to use desktop */}
-      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div className="text-6xl mb-6">🌌</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-3">
-          Use Desktop for Idea Constellation
-        </h2>
-        <p className="text-gray-600 mb-6 max-w-sm">
-          The interactive idea graph works best on larger screens. Try Search on mobile instead.
-        </p>
-        <a
-          href="/search"
-          className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-        >
-          Go to Search
-        </a>
-      </div>
-
       {/* Desktop: Additional Controls (positioned after shared navigation) */}
       <div className="hidden md:flex fixed top-4 left-[640px] right-4 z-40 items-center gap-3">
         {/* Stats and Filter */}
