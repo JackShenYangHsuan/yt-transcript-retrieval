@@ -420,25 +420,35 @@ function YouTubeIcon() {
 function ViewIndicator({
   level,
   clusterName,
+  ideaTitle,
   onBackToClusters,
   onBackToTopIdeas,
 }: {
   level: ViewLevel;
   clusterName: string | null;
+  ideaTitle: string | null;
   onBackToClusters: () => void;
   onBackToTopIdeas: () => void;
 }) {
   // Don't show anything at clusters level
   if (level === "clusters") return null;
 
+  // Truncate idea title to ~4 words
+  const truncateTitle = (title: string | null) => {
+    if (!title) return "";
+    const words = title.split(" ");
+    if (words.length <= 4) return title;
+    return words.slice(0, 4).join(" ") + "...";
+  };
+
   return (
     <div className="absolute top-20 left-4 z-40 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2">
       <div className="flex items-center gap-2 text-sm">
         <button
           onClick={onBackToClusters}
-          className="text-gray-500 hover:text-gray-900 transition-colors"
+          className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
         >
-          Clusters
+          Main
         </button>
 
         {clusterName && (
@@ -449,7 +459,7 @@ function ViewIndicator({
               className={`truncate max-w-[200px] transition-colors ${
                 level === "topIdeas"
                   ? "text-gray-900 font-medium"
-                  : "text-gray-500 hover:text-gray-900"
+                  : "text-gray-500 hover:text-gray-900 cursor-pointer"
               }`}
               title={clusterName}
             >
@@ -458,10 +468,12 @@ function ViewIndicator({
           </>
         )}
 
-        {level === "connectedIdeas" && (
+        {level === "connectedIdeas" && ideaTitle && (
           <>
             <span className="text-gray-300">/</span>
-            <span className="text-gray-900 font-medium">Connections</span>
+            <span className="text-gray-900 font-medium" title={ideaTitle}>
+              {truncateTitle(ideaTitle)}
+            </span>
           </>
         )}
 
@@ -1295,6 +1307,7 @@ function IdeaGraphInner() {
       <ViewIndicator
         level={viewLevel}
         clusterName={focusedCluster?.name || null}
+        ideaTitle={focusedIdea?.summary || null}
         onBackToClusters={handleBackToClusters}
         onBackToTopIdeas={handleBackToTopIdeas}
       />

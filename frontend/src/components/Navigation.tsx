@@ -28,11 +28,9 @@ export default function Navigation() {
 
   return (
     <div className="fixed top-4 left-4 z-50 flex items-center gap-3">
-      {/* Logo */}
-      <a
-        href="https://www.lennyspodcast.com/"
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* Logo - navigates to Idea Constellation */}
+      <Link
+        href="/"
         className="flex items-center gap-2 bg-white rounded-full shadow-lg px-3 h-12 hover:shadow-xl transition-shadow flex-shrink-0"
       >
         <img
@@ -43,7 +41,7 @@ export default function Navigation() {
         <span className="text-sm font-semibold text-gray-900 pr-1">
           Lenny&apos;s Podcast
         </span>
-      </a>
+      </Link>
 
       {/* Menu Bar with animated indicator */}
       <div className="bg-white rounded-full shadow-lg px-2 h-12 flex items-center relative flex-shrink-0">
