@@ -871,10 +871,17 @@ function IdeaGraphInner() {
   }, [graphData, viewLevel, focusedCluster, focusedIdea, selectedCompanies, filteredIdeas, getConnectedIdeas]);
 
   // Layout helpers
-  const layoutClusters = useCallback((clusters: ClusterInfo[], ideasById: Map<string, IdeaNodeData>): Node[] => {
+  const layoutClusters = useCallback((clusters: ClusterInfo[], ideasById: Map<string, IdeaNodeData>, connections: IdeaEdgeData[]): Node[] => {
     const cols = Math.ceil(clusters.length / 2);
     const spacingX = 700; // Horizontal spacing between cards
     const spacingY = 850; // Vertical spacing (cards are taller due to content)
+
+    // Pre-compute connection counts for all ideas
+    const connectionCounts = new Map<string, number>();
+    connections.forEach(conn => {
+      connectionCounts.set(conn.source, (connectionCounts.get(conn.source) || 0) + 1);
+      connectionCounts.set(conn.target, (connectionCounts.get(conn.target) || 0) + 1);
+    });
 
     return clusters.map((cluster, i) => {
       const row = Math.floor(i / cols);
@@ -882,10 +889,11 @@ function IdeaGraphInner() {
       const offsetX = -((cols - 1) * spacingX) / 2;
       const offsetY = -spacingY / 2;
 
-      // Get top ideas for this cluster
+      // Get top ideas for this cluster and sort by connection count (same as level 2)
       const topIdeas = (cluster.top_idea_ids || [])
         .map(id => ideasById.get(id))
         .filter((idea): idea is IdeaNodeData => idea !== undefined)
+        .sort((a, b) => (connectionCounts.get(b.id) || 0) - (connectionCounts.get(a.id) || 0))
         .slice(0, 5);
 
       return {
@@ -1094,7 +1102,7 @@ function IdeaGraphInner() {
 
     if (viewLevel === "clusters") {
       // Use filtered clusters with correct idea counts - no edges between clusters
-      newNodes = layoutClusters(filteredClusters, ideasById);
+      newNodes = layoutClusters(filteredClusters, ideasById, graphData.connections);
     } else if (viewLevel === "topIdeas" && focusedCluster) {
       // Get ideas for this cluster
       const clusterIdeas = selectedCompanies.length > 0
