@@ -8,8 +8,8 @@ echo "PORT: ${PORT:-8000}"
 # Debug: Check what's in the image
 echo "=== Checking data_staging directory ==="
 ls -la /app/data_staging/ 2>/dev/null || echo "data_staging directory NOT FOUND!"
+ls -la /app/data_staging/bm25_index/ 2>/dev/null || echo "data_staging/bm25_index directory NOT FOUND!"
 ls -la /app/data_staging/ideas/ 2>/dev/null || echo "data_staging/ideas directory NOT FOUND!"
-ls -la /app/data_staging/qdrant/ 2>/dev/null || echo "data_staging/qdrant directory NOT FOUND!"
 
 # Debug: Check persistent disk mount
 echo "=== Checking /app/data mount ==="
@@ -17,7 +17,8 @@ ls -la /app/data/ 2>/dev/null || echo "/app/data directory NOT FOUND!"
 df -h /app/data/ 2>/dev/null || echo "Cannot check disk space"
 
 # Check if data directory is empty (first run with fresh disk)
-if [ ! -d "/app/data/qdrant" ] || [ ! -d "/app/data/bm25_index" ]; then
+# Note: Using Qdrant Cloud now, so only check for bm25_index
+if [ ! -d "/app/data/bm25_index" ]; then
     echo "=== Data directory empty, copying from staging... ==="
 
     # Ensure target directory exists
@@ -39,8 +40,8 @@ fi
 # List data directory contents for debugging
 echo "=== Final /app/data directory contents ==="
 ls -la /app/data/
+ls -la /app/data/bm25_index/ 2>/dev/null || echo "No bm25_index directory"
 ls -la /app/data/ideas/ 2>/dev/null || echo "No ideas directory"
-ls -la /app/data/qdrant/ 2>/dev/null || echo "No qdrant directory"
 
 # Start the application
 echo "=== Starting API server on port ${PORT:-8000} ==="

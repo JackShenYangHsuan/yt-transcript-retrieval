@@ -2,20 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies including git-lfs
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
-    git-lfs \
-    && rm -rf /var/lib/apt/lists/* \
-    && git lfs install
+    && rm -rf /var/lib/apt/lists/*
 
-# Clone repo and pull LFS files to get actual data
+# Clone repo to get data and code
 ARG REPO_URL=https://github.com/JackShenYangHsuan/yt-transcript-retrieval.git
 RUN git clone --depth 1 ${REPO_URL} /tmp/repo && \
-    cd /tmp/repo && \
-    git lfs pull && \
     mv /tmp/repo/data /app/data_staging && \
     mv /tmp/repo/backend/requirements.txt /app/ && \
     mv /tmp/repo/backend/src /app/src && \
