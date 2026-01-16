@@ -124,13 +124,27 @@ async def health_check():
     if vector_store:
         try:
             collection_info = vector_store.get_collection_info()
-        except Exception:
-            pass
+        except Exception as e:
+            collection_info = {"error": str(e)}
 
     return HealthResponse(
         status="healthy" if search_pipeline else "initializing",
         collection_info=collection_info,
     )
+
+
+@app.get("/debug/config")
+async def debug_config():
+    """Debug endpoint to check configuration."""
+    return {
+        "qdrant_url_set": bool(settings.qdrant_url),
+        "qdrant_api_key_set": bool(settings.qdrant_api_key),
+        "qdrant_url_preview": settings.qdrant_url[:50] + "..." if settings.qdrant_url and len(settings.qdrant_url) > 50 else settings.qdrant_url,
+        "openai_api_key_set": bool(settings.openai_api_key),
+        "bm25_lightweight_mode": settings.bm25_lightweight_mode,
+        "use_reranker": settings.use_reranker,
+        "data_dir": str(settings.data_dir),
+    }
 
 
 @app.post("/search", response_model=SearchResponse)
