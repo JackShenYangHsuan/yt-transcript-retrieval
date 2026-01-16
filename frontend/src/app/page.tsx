@@ -1298,8 +1298,34 @@ function IdeaGraphInner() {
 
   return (
     <div className="h-screen w-screen relative">
-      {/* Additional Controls (positioned after shared navigation) */}
-      <div className="fixed top-4 left-[640px] right-4 z-40 flex items-center gap-3">
+      {/* Mobile: Message to view on desktop */}
+      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
+        <div className="text-6xl mb-6">🌌</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-3">
+          Best Viewed on Desktop
+        </h2>
+        <p className="text-gray-600 mb-6 max-w-sm">
+          The Idea Constellation is an interactive graph that works best on larger screens.
+          Explore clusters, connections, and ideas with full navigation.
+        </p>
+        <div className="flex gap-3">
+          <a
+            href="/search"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+          >
+            Try Search
+          </a>
+          <a
+            href="/how-it-works"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            How it Works
+          </a>
+        </div>
+      </div>
+
+      {/* Desktop: Additional Controls (positioned after shared navigation) */}
+      <div className="hidden md:flex fixed top-4 left-[640px] right-4 z-40 items-center gap-3">
         {/* Stats and Filter */}
         {graphData && (
           <div className="bg-white rounded-full shadow-lg px-3 h-12 flex items-center gap-2 flex-shrink-0">

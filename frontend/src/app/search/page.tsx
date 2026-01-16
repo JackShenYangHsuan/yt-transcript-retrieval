@@ -41,7 +41,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-12">
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-6">
           <div className="relative">
@@ -49,8 +49,8 @@ export default function Home() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask anything about product, growth, leadership..."
-              className="w-full px-4 py-3 pr-32 text-base border border-gray-200 rounded-lg
+              placeholder="Ask about product, growth, leadership..."
+              className="w-full px-4 py-3 pr-24 sm:pr-32 text-base border border-gray-200 rounded-lg
                          focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
                          placeholder:text-gray-400"
             />
@@ -58,7 +58,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleClear}
-                className="absolute right-24 top-1/2 -translate-y-1/2 p-1.5
+                className="absolute right-20 sm:right-24 top-1/2 -translate-y-1/2 p-1.5
                            text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -216,12 +216,13 @@ function ResultCard({ result }: { result: SearchResult }) {
         href={result.youtube_deep_link}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 px-4 py-2 mt-4 text-sm font-medium
+        className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 mt-4 text-sm font-medium
                    text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200
                    transition-colors"
       >
         <YouTubeIcon />
-        <span>Play in YouTube</span>
+        <span className="hidden sm:inline">Play in YouTube</span>
+        <span className="sm:hidden">Watch</span>
         <span className="text-gray-400">@ {result.start_timestamp}</span>
       </a>
     </div>

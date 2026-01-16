@@ -549,8 +549,8 @@ const searchEdges: Edge[] = [
   { id: "e8", source: "query", target: "bm25-retrieval", type: "step", animated: true, style: { stroke: "#f97316", strokeWidth: 2 }, markerEnd: arrowMarker("#f97316") },
   { id: "e9", source: "qdrant", target: "dense-retrieval", type: "step", style: { stroke: "#8b5cf6", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#8b5cf6") },
   { id: "e10", source: "bm25-index", target: "bm25-retrieval", type: "step", style: { stroke: "#8b5cf6", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#8b5cf6") },
-  { id: "e11", source: "dense-retrieval", target: "rrf", type: "smoothstep", pathOptions: { borderRadius: 0 }, style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
-  { id: "e12", source: "bm25-retrieval", target: "rrf", type: "smoothstep", pathOptions: { borderRadius: 0 }, style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
+  { id: "e11", source: "dense-retrieval", target: "rrf", type: "smoothstep", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") } as Edge,
+  { id: "e12", source: "bm25-retrieval", target: "rrf", type: "smoothstep", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") } as Edge,
   // Sponsor filter (removes ad content)
   { id: "e13", source: "rrf", target: "sponsor-filter", type: "step", style: { stroke: "#ef4444", strokeWidth: 2 }, markerEnd: arrowMarker("#ef4444") },
   // Reranker path (optional - indicated by node label)
@@ -849,8 +849,34 @@ function HowItWorksInner() {
 
   return (
     <div className="h-screen w-screen relative bg-gray-50">
-      {/* Pipeline Toggle - positioned next to shared navigation */}
-      <div className="fixed top-4 left-[640px] z-50">
+      {/* Mobile: Message to view on desktop */}
+      <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
+        <div className="text-6xl mb-6">🖥️</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-3">
+          Best Viewed on Desktop
+        </h2>
+        <p className="text-gray-600 mb-6 max-w-sm">
+          This interactive pipeline diagram requires a larger screen to explore properly.
+          Hover over nodes to see technical details.
+        </p>
+        <div className="flex gap-3">
+          <a
+            href="/"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+          >
+            View Ideas
+          </a>
+          <a
+            href="/search"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            Search
+          </a>
+        </div>
+      </div>
+
+      {/* Desktop: Pipeline Toggle - positioned next to shared navigation */}
+      <div className="hidden md:block fixed top-4 left-[640px] z-50">
         <div className="bg-white rounded-full shadow-lg px-2 h-12 flex items-center gap-1">
           <button
             onClick={() => handleViewChange("search")}
@@ -875,8 +901,8 @@ function HowItWorksInner() {
         </div>
       </div>
 
-      {/* Legend + Stats - side by side */}
-      <div className="absolute top-20 right-4 z-50 flex gap-3">
+      {/* Desktop: Legend + Stats - side by side */}
+      <div className="hidden md:flex absolute top-20 right-4 z-50 gap-3">
         {/* Legend */}
         <div className="bg-white rounded-lg shadow-lg px-4 py-3 h-fit">
           <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Legend</h4>
