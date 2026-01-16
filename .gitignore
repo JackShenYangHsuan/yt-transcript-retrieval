@@ -27,12 +27,15 @@ dist/
 build/
 *.egg-info/
 
-# Data (large files)
-data/
+# Data - NOT ignored, needed for deployment
+# data/
+*.qdrant/
+
+# JSON (except config files)
 *.json
 !package.json
 !tsconfig.json
-*.qdrant/
+!data/**/*.json
 
 # Logs
 *.log

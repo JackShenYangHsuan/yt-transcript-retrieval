@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: lenny-search-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    region: oregon
+    plan: standard  # $25/mo, always-on
+    healthCheckPath: /health
+    envVars:
+      - key: EMBEDDING_PROVIDER
+        value: openai
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: USE_RERANKER
+        value: "true"
+      - key: OPENAI_API_KEY
+        sync: false  # Set manually in Render dashboard
+    disk:
+      name: search-data
+      mountPath: /app/data
+      sizeGB: 1  # ~535MB indexes + room to grow
