@@ -716,6 +716,19 @@ function IdeaGraphInner() {
 
   const { fitView } = useReactFlow();
 
+  // Listen for logo click to reset view to main clusters
+  useEffect(() => {
+    const handleReset = () => {
+      setViewLevel("clusters");
+      setFocusedCluster(null);
+      setFocusedIdea(null);
+      setSelectedIdea(null);
+    };
+
+    window.addEventListener(RESET_CONSTELLATION_EVENT, handleReset);
+    return () => window.removeEventListener(RESET_CONSTELLATION_EVENT, handleReset);
+  }, []);
+
   // Fetch graph data
   useEffect(() => {
     async function fetchData() {
