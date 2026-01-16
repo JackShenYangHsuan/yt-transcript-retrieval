@@ -773,17 +773,18 @@ export function getCompanyForGuest(guestName: string): string | null {
 }
 
 /**
- * Get the best company for display - tries title first, then guest mapping
+ * Get the best company for display - tries guest mapping first, then title extraction
  */
 export function getBestCompany(episodeTitle: string, guestName?: string): string | null {
-  // First try to extract from title
+  // First try guest mapping (more reliable)
+  if (guestName) {
+    const fromGuest = getCompanyForGuest(guestName);
+    if (fromGuest) return fromGuest;
+  }
+
+  // Fall back to title extraction
   const fromTitle = getFirstCompanyFromTitle(episodeTitle);
   if (fromTitle) return fromTitle;
-
-  // Fall back to guest mapping
-  if (guestName) {
-    return getCompanyForGuest(guestName);
-  }
 
   return null;
 }

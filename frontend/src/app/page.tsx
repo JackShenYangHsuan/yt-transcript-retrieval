@@ -142,11 +142,6 @@ const IdeaNodeComponent = memo(function IdeaNodeComponent({ data }: NodeProps) {
           </div>
         )}
       </div>
-      {nodeData.isCenter && (
-        <div className={`text-gray-400 mt-3 text-center ${nodeData.size === "large" ? "text-sm" : "text-xs"}`}>
-          Click connections to view details
-        </div>
-      )}
     </div>
   );
 });
