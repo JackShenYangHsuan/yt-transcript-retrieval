@@ -10,7 +10,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchTime, setSearchTime] = useState<number | null>(null);
-  const [useReranker, setUseReranker] = useState(true);
+  const [useReranker, setUseReranker] = useState(false);
 
   const handleClear = () => {
     setQuery("");
