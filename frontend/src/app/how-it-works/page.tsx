@@ -840,60 +840,63 @@ function HowItWorksInner() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="absolute top-20 right-4 z-50 bg-white rounded-lg shadow-lg px-4 py-3 max-w-md">
-        <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Legend</h4>
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-gray-800"></div>
-            <span>Data Source</span>
+      {/* Legend + Stats - side by side */}
+      <div className="absolute top-20 right-4 z-50 flex gap-3">
+        {/* Legend */}
+        <div className="bg-white rounded-lg shadow-lg px-4 py-3 h-fit">
+          <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Legend</h4>
+          <div className="flex flex-wrap gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-gray-800"></div>
+              <span>Data Source</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded border-2 border-indigo-500"></div>
+              <span>Processing Step</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+              <span>Output</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-8 h-0.5 bg-gray-400"></div>
+              <span>Data Flow</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded border-2 border-indigo-500"></div>
-            <span>Processing Step</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-gradient-to-r from-emerald-500 to-teal-600"></div>
-            <span>Output</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-8 h-0.5 bg-gray-400"></div>
-            <span>Data Flow</span>
-          </div>
+          <p className="text-[10px] text-gray-400 mt-2">
+            Hover over nodes for details
+          </p>
         </div>
-        <p className="text-[10px] text-gray-400 mt-2">
-          Hover over nodes to see technical implementation details
-        </p>
-      </div>
 
-      {/* Stats Panel */}
-      <div className="absolute bottom-4 right-4 z-50 bg-white rounded-lg shadow-lg px-4 py-3">
-        <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">
-          {view === "search" ? "Search Stats" : "Graph Stats"}
-        </h4>
-        {view === "search" ? (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-            <div className="text-gray-500">Episodes:</div>
-            <div className="font-mono text-gray-900">~300</div>
-            <div className="text-gray-500">Chunks:</div>
-            <div className="font-mono text-gray-900">~15k</div>
-            <div className="text-gray-500">Embedding Dim:</div>
-            <div className="font-mono text-gray-900">1024</div>
-            <div className="text-gray-500">Rerank Top-K:</div>
-            <div className="font-mono text-gray-900">5</div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-            <div className="text-gray-500">Ideas:</div>
-            <div className="font-mono text-gray-900">~2,400</div>
-            <div className="text-gray-500">Clusters:</div>
-            <div className="font-mono text-gray-900">10</div>
-            <div className="text-gray-500">Connections:</div>
-            <div className="font-mono text-gray-900">~5k</div>
-            <div className="text-gray-500">LLM Calls:</div>
-            <div className="font-mono text-gray-900">~350</div>
-          </div>
-        )}
+        {/* Stats Panel */}
+        <div className="bg-white rounded-lg shadow-lg px-4 py-3 h-fit">
+          <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">
+            {view === "search" ? "Search Stats" : "Graph Stats"}
+          </h4>
+          {view === "search" ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <div className="text-gray-500">Episodes:</div>
+              <div className="font-mono text-gray-900">~300</div>
+              <div className="text-gray-500">Chunks:</div>
+              <div className="font-mono text-gray-900">~15k</div>
+              <div className="text-gray-500">Embedding Dim:</div>
+              <div className="font-mono text-gray-900">1024</div>
+              <div className="text-gray-500">Rerank Top-K:</div>
+              <div className="font-mono text-gray-900">15</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <div className="text-gray-500">Ideas:</div>
+              <div className="font-mono text-gray-900">~2,400</div>
+              <div className="text-gray-500">Clusters:</div>
+              <div className="font-mono text-gray-900">10</div>
+              <div className="text-gray-500">Connections:</div>
+              <div className="font-mono text-gray-900">~5k</div>
+              <div className="text-gray-500">LLM Calls:</div>
+              <div className="font-mono text-gray-900">~350</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* React Flow Canvas */}
