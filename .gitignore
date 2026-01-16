@@ -44,3 +44,4 @@ npm-debug.log*
 # Testing
 coverage/
 .pytest_cache/
+data/qdrant/
