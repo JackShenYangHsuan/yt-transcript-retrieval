@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     dense_top_k: int = 15
     bm25_top_k: int = 15
     fusion_top_k: int = 20
-    rerank_top_n: int = 5
+    rerank_top_n: int = 15
 
     # Collection name
     collection_name: str = "podcast_chunks"

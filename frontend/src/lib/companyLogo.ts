@@ -129,11 +129,8 @@ const COMPANY_DOMAINS: Record<string, string> = {
   "neon": "neon.tech",
   "railway": "railway.app",
   // Additional companies from guest mapping
-  "openai": "openai.com",
-  "anthropic": "anthropic.com",
   "lenny's newsletter": "lennysnewsletter.com",
   "product talk": "producttalk.org",
-  "svpg": "svpg.com",
   "fyi": "fyi.co",
   "superhuman": "superhuman.com",
   "gumroad": "gumroad.com",
@@ -502,4 +499,38 @@ export function cleanGuestName(name: string): string {
     .replace(/\s+\d+(\.\d+)?$/, "") // Remove trailing "2.0", "3", etc.
     .replace(/\s+[IVX]+$/, "")      // Remove trailing roman numerals like "II", "III"
     .trim();
+}
+
+/**
+ * Get company for a guest from the guest-company mapping
+ */
+export function getCompanyForGuest(guestName: string): string | null {
+  if (!guestName) return null;
+  const cleaned = cleanGuestName(guestName).toLowerCase();
+  return GUEST_COMPANIES[cleaned] || null;
+}
+
+/**
+ * Get the best company for display - tries title first, then guest mapping
+ */
+export function getBestCompany(episodeTitle: string, guestName?: string): string | null {
+  // First try to extract from title
+  const fromTitle = getFirstCompanyFromTitle(episodeTitle);
+  if (fromTitle) return fromTitle;
+
+  // Fall back to guest mapping
+  if (guestName) {
+    return getCompanyForGuest(guestName);
+  }
+
+  return null;
+}
+
+/**
+ * Get logo URL using both episode title and guest name
+ */
+export function getBestLogoUrl(episodeTitle: string, guestName?: string): string | null {
+  const company = getBestCompany(episodeTitle, guestName);
+  if (!company) return null;
+  return getCompanyLogoUrl(company);
 }

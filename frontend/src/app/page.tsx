@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, memo } from "react";
 import {
   ReactFlow,
   Controls,
@@ -25,7 +25,7 @@ import {
   ClusterInfo,
   IdeaEdge as IdeaEdgeData,
 } from "@/lib/api";
-import { getLogoUrlFromTitle, getFirstCompanyFromTitle, extractCompaniesFromTitle, getCompanyLogoUrl, cleanGuestName } from "@/lib/companyLogo";
+import { getBestLogoUrl, getBestCompany, extractCompaniesFromTitle, getCompanyLogoUrl, cleanGuestName } from "@/lib/companyLogo";
 
 // View levels - now includes connectedIdeas
 type ViewLevel = "clusters" | "topIdeas" | "connectedIdeas" | "allIdeas";
@@ -33,7 +33,7 @@ type ViewLevel = "clusters" | "topIdeas" | "connectedIdeas" | "allIdeas";
 // Company logo component with fallback to initials
 function CompanyLogo({ episodeTitle, guest, size = "sm" }: { episodeTitle: string; guest: string; size?: "sm" | "md" | "lg" | "xl" | "2xl" }) {
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">("loading");
-  const logoUrl = getLogoUrlFromTitle(episodeTitle);
+  const logoUrl = getBestLogoUrl(episodeTitle, guest);
 
   const sizeClasses = {
     sm: "w-5 h-5",
@@ -71,6 +71,8 @@ function CompanyLogo({ episodeTitle, guest, size = "sm" }: { episodeTitle: strin
       <img
         src={logoUrl}
         alt=""
+        loading="lazy"
+        decoding="async"
         className={`${sizeClasses} rounded object-contain bg-white absolute inset-0 ${imgStatus === "loaded" ? "opacity-100" : "opacity-0"}`}
         onLoad={() => setImgStatus("loaded")}
         onError={() => setImgStatus("error")}
@@ -79,8 +81,8 @@ function CompanyLogo({ episodeTitle, guest, size = "sm" }: { episodeTitle: strin
   );
 }
 
-// Custom node component for individual ideas
-function IdeaNodeComponent({ data }: NodeProps) {
+// Custom node component for individual ideas (memoized for performance)
+const IdeaNodeComponent = memo(function IdeaNodeComponent({ data }: NodeProps) {
   const nodeData = data as unknown as IdeaNodeData & {
     color: string;
     onClick: () => void;
@@ -127,7 +129,7 @@ function IdeaNodeComponent({ data }: NodeProps) {
       </div>
       <div className={`flex items-center justify-between gap-6 mt-6 ${nodeData.size === "small" ? "text-xl" : nodeData.size === "medium" ? "text-2xl" : "text-4xl"}`}>
         <span className="text-gray-500 truncate">{cleanGuestName(nodeData.guest)}</span>
-        {getFirstCompanyFromTitle(nodeData.episode_title) && (
+        {getBestCompany(nodeData.episode_title, nodeData.guest) && (
           <div className="flex items-center gap-4">
             <CompanyLogo
               episodeTitle={nodeData.episode_title}
@@ -135,7 +137,7 @@ function IdeaNodeComponent({ data }: NodeProps) {
               size={nodeData.size === "small" ? "lg" : nodeData.size === "medium" ? "xl" : "2xl"}
             />
             <span className="text-gray-400 truncate max-w-[300px]">
-              {getFirstCompanyFromTitle(nodeData.episode_title)}
+              {getBestCompany(nodeData.episode_title, nodeData.guest)}
             </span>
           </div>
         )}
@@ -147,42 +149,86 @@ function IdeaNodeComponent({ data }: NodeProps) {
       )}
     </div>
   );
-}
+});
 
-// Cluster summary node (shown at Level 1)
-function ClusterSummaryNode({ data }: NodeProps) {
-  const clusterData = data as unknown as ClusterInfo & { onExpand: () => void };
+// Cluster summary node (shown at Level 1) - Card with top 5 ideas (memoized for performance)
+const ClusterSummaryNode = memo(function ClusterSummaryNode({ data }: NodeProps) {
+  const clusterData = data as unknown as ClusterInfo & {
+    onExpand: () => void;
+    topIdeas: IdeaNodeData[];
+  };
+
   return (
     <div
-      className="flex flex-col items-center cursor-pointer group"
+      className="cursor-pointer group"
       onClick={clusterData.onExpand}
     >
       <Handle type="target" position={Position.Top} className="opacity-0" />
+
+      {/* Card container */}
       <div
-        className="w-44 h-44 rounded-full flex flex-col items-center justify-center shadow-xl transition-all group-hover:scale-110 border-4 border-white"
-        style={{ backgroundColor: clusterData.color }}
+        className="w-[640px] rounded-2xl shadow-xl transition-all group-hover:shadow-2xl group-hover:scale-[1.02] overflow-hidden"
+        style={{ backgroundColor: "white", border: `4px solid ${clusterData.color}` }}
       >
-        <div className="text-4xl font-bold text-white">{clusterData.idea_count}</div>
-        <div className="text-sm text-white/80">ideas</div>
-      </div>
-      <div
-        className="mt-4 px-6 py-4 rounded-xl shadow-lg max-w-[260px] transition-all group-hover:shadow-xl"
-        style={{ backgroundColor: clusterData.color }}
-      >
-        <div className="text-lg font-bold text-white text-center leading-tight">
-          {clusterData.name}
+        {/* Header */}
+        <div
+          className="px-10 py-8"
+          style={{ backgroundColor: clusterData.color }}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-4xl font-bold text-white leading-tight">
+              {clusterData.name}
+            </h3>
+            <span className="text-2xl text-white bg-black/25 px-4 py-1.5 rounded-full">
+              {clusterData.idea_count}
+            </span>
+          </div>
+          <p className="text-2xl text-white/80 mt-3 line-clamp-2">
+            {clusterData.description}
+          </p>
         </div>
-        <div className="text-sm text-white/80 text-center mt-2 line-clamp-2">
-          {clusterData.description}
+
+        {/* Top Ideas List */}
+        <div className="px-9 py-7">
+          <p className="text-xl text-gray-400 uppercase tracking-wide mb-5">Top Ideas</p>
+          <ul className="space-y-5">
+            {clusterData.topIdeas?.slice(0, 5).map((idea, idx) => (
+              <li key={idea.id} className="flex items-start gap-4">
+                <span
+                  className="text-xl font-bold mt-0.5 w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: clusterData.color + "20", color: clusterData.color }}
+                >
+                  {idx + 1}
+                </span>
+                <span className="text-2xl text-gray-700 line-clamp-2 leading-snug">
+                  {idea.summary}
+                </span>
+              </li>
+            ))}
+            {(!clusterData.topIdeas || clusterData.topIdeas.length === 0) && (
+              <li className="text-2xl text-gray-400 italic">Click to explore ideas</li>
+            )}
+          </ul>
+        </div>
+
+        {/* Footer */}
+        <div
+          className="px-9 py-4 text-center border-t"
+          style={{ borderColor: clusterData.color + "30" }}
+        >
+          <span className="text-xl text-gray-500 group-hover:text-gray-700 transition-colors">
+            Click to explore →
+          </span>
         </div>
       </div>
+
       <Handle type="source" position={Position.Bottom} className="opacity-0" />
     </div>
   );
-}
+});
 
-// Small cluster label (shown at Level 2+)
-function ClusterLabelNode({ data }: NodeProps) {
+// Small cluster label (shown at Level 2+) (memoized for performance)
+const ClusterLabelNode = memo(function ClusterLabelNode({ data }: NodeProps) {
   const clusterData = data as unknown as ClusterInfo & { onBack?: () => void; label?: string };
   return (
     <div
@@ -196,41 +242,12 @@ function ClusterLabelNode({ data }: NodeProps) {
       )}
     </div>
   );
-}
-
-// Cluster region background (colored zone for grouping)
-function ClusterRegionNode({ data }: NodeProps) {
-  const regionData = data as unknown as {
-    color: string;
-    width: number;
-    height: number;
-    label: string;
-  };
-  return (
-    <div
-      className="rounded-3xl flex items-start justify-center pt-6 pointer-events-none"
-      style={{
-        width: regionData.width,
-        height: regionData.height,
-        backgroundColor: regionData.color + "15",
-        border: `3px solid ${regionData.color}40`,
-      }}
-    >
-      <div
-        className="px-4 py-2 rounded-full text-white font-semibold text-lg"
-        style={{ backgroundColor: regionData.color }}
-      >
-        {regionData.label}
-      </div>
-    </div>
-  );
-}
+});
 
 const nodeTypes = {
   idea: IdeaNodeComponent,
   cluster: ClusterLabelNode,
   clusterSummary: ClusterSummaryNode,
-  clusterRegion: ClusterRegionNode,
 };
 
 // Map connection strength (0.5-1.0) to stroke width (2-6px)
@@ -348,20 +365,9 @@ function IdeaDetailPanel({
   return (
     <div className="absolute top-4 right-4 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-start">
-        <div>
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
-              idea.idea_type === "strategic"
-                ? "bg-purple-100 text-purple-700"
-                : "bg-blue-100 text-blue-700"
-            }`}
-          >
-            {idea.idea_type}
-          </span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-2">
-            {idea.cluster_name}
-          </span>
-        </div>
+        <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-medium">
+          {idea.cluster_name}
+        </span>
         <button
           onClick={onClose}
           className="text-gray-400 hover:text-gray-600 text-xl leading-none"
@@ -415,88 +421,53 @@ function ViewIndicator({
   clusterName,
   onBackToClusters,
   onBackToTopIdeas,
-  onShowAll,
-  showAllNodes,
-  onToggleAllNodes,
 }: {
   level: ViewLevel;
   clusterName: string | null;
   onBackToClusters: () => void;
   onBackToTopIdeas: () => void;
-  onShowAll: () => void;
-  showAllNodes: boolean;
-  onToggleAllNodes: () => void;
 }) {
+  // Don't show anything at clusters level
+  if (level === "clusters") return null;
+
   return (
-    <div className="absolute top-4 left-4 z-40 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm px-3 py-2">
-      <div className="flex items-center gap-2 text-xs">
-        {/* Toggle for Level 1 */}
-        {level === "clusters" && (
-          <div className="flex items-center bg-gray-100 rounded-md p-0.5">
+    <div className="absolute top-20 left-4 z-40 bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-4 py-2">
+      <div className="flex items-center gap-2 text-sm">
+        <button
+          onClick={onBackToClusters}
+          className="text-gray-500 hover:text-gray-900 transition-colors"
+        >
+          Clusters
+        </button>
+
+        {clusterName && (
+          <>
+            <span className="text-gray-300">/</span>
             <button
-              onClick={() => showAllNodes && onToggleAllNodes()}
-              className={`px-2 py-1 rounded transition-colors ${
-                !showAllNodes
-                  ? "bg-white text-gray-900 shadow-sm font-medium"
-                  : "text-gray-500 hover:text-gray-700"
+              onClick={level !== "topIdeas" ? onBackToTopIdeas : undefined}
+              className={`truncate max-w-[200px] transition-colors ${
+                level === "topIdeas"
+                  ? "text-gray-900 font-medium"
+                  : "text-gray-500 hover:text-gray-900"
               }`}
+              title={clusterName}
             >
-              Bubbles
+              {clusterName}
             </button>
-            <button
-              onClick={() => !showAllNodes && onToggleAllNodes()}
-              className={`px-2 py-1 rounded transition-colors ${
-                showAllNodes
-                  ? "bg-white text-gray-900 shadow-sm font-medium"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              All Nodes
-            </button>
-          </div>
+          </>
         )}
 
-        {/* Breadcrumbs for deeper levels */}
-        {level !== "clusters" && (
+        {level === "connectedIdeas" && (
           <>
-            <button
-              onClick={onBackToClusters}
-              className="text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              Clusters
-            </button>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-900 font-medium">Connections</span>
+          </>
+        )}
 
-            {clusterName && (
-              <>
-                <span className="text-gray-300">/</span>
-                <button
-                  onClick={level !== "topIdeas" ? onBackToTopIdeas : undefined}
-                  className={`truncate max-w-[140px] transition-colors ${
-                    level === "topIdeas"
-                      ? "text-gray-900 font-medium"
-                      : "text-gray-500 hover:text-gray-900"
-                  }`}
-                  title={clusterName}
-                >
-                  {clusterName}
-                </button>
-              </>
-            )}
-
-            {level === "connectedIdeas" && (
-              <>
-                <span className="text-gray-300">/</span>
-                <span className="text-gray-900 font-medium">Connections</span>
-              </>
-            )}
-
-            {level === "allIdeas" && (
-              <>
-                <span className="text-gray-300">/</span>
-                <span className="text-gray-900 font-medium">All</span>
-              </>
-            )}
-
+        {level === "allIdeas" && (
+          <>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-900 font-medium">All</span>
           </>
         )}
       </div>
@@ -506,42 +477,86 @@ function ViewIndicator({
 
 // Legend
 function Legend({ clusters }: { clusters: ClusterInfo[] }) {
-  return (
-    <div className="absolute bottom-4 right-4 z-40 bg-white rounded-lg shadow-lg p-3 max-w-[280px]">
-      <div className="text-xs font-medium text-gray-700 mb-2">Connections</div>
-      <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
-        <div className="w-8 flex items-center">
-          <div className="w-4 h-[1px] bg-gray-800"></div>
-          <div className="w-4 h-[4px] bg-gray-800"></div>
-        </div>
-        <span>Similar (thin=weak, thick=strong)</span>
-      </div>
-      <div className="flex items-center gap-2 text-xs text-gray-600">
-        <div
-          className="w-8 h-0.5"
-          style={{ background: "repeating-linear-gradient(90deg, #dc2626 0, #dc2626 4px, transparent 4px, transparent 8px)" }}
-        ></div>
-        <span>Contradicting</span>
-      </div>
+  const [isExpanded, setIsExpanded] = useState(false);
+  const springEase = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
-      {clusters.length > 0 && (
-        <>
-          <div className="text-xs font-medium text-gray-700 mt-3 mb-2 pt-2 border-t border-gray-100">
-            Clusters
+  return (
+    <div
+      className="bg-white rounded-full shadow-lg h-12 flex items-center overflow-hidden px-4"
+      style={{
+        flex: isExpanded ? "1 1 0" : "0 0 105px",
+        minWidth: isExpanded ? 0 : "105px",
+        transition: `flex 400ms ${springEase}, min-width 400ms ${springEase}`,
+      }}
+    >
+      {/* Toggle Button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 transition-colors flex-shrink-0"
+        title={isExpanded ? "Collapse legend" : "Expand legend"}
+      >
+        <svg
+          className="w-4 h-4"
+          style={{
+            transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: `transform 400ms ${springEase}`,
+          }}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+        <span>Legend</span>
+      </button>
+
+      {/* Expanded Content */}
+      <div
+        className="flex items-center gap-4 overflow-hidden ml-4"
+        style={{
+          opacity: isExpanded ? 1 : 0,
+          transform: isExpanded ? "translateX(0)" : "translateX(-20px)",
+          transition: `opacity 250ms ease-out, transform 400ms ${springEase}`,
+          pointerEvents: isExpanded ? "auto" : "none",
+        }}
+      >
+        {/* Connections */}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <span className="text-xs font-medium text-gray-700">Connections:</span>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div className="w-8 flex items-center">
+              <div className="w-4 h-[1px] bg-gray-800"></div>
+              <div className="w-4 h-[4px] bg-gray-800"></div>
+            </div>
+            <span>Similar</span>
           </div>
-          <div className="space-y-1">
-            {clusters.map((cluster) => (
-              <div key={cluster.id} className="flex items-center gap-2 text-xs text-gray-600">
-                <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0 border-2"
-                  style={{ borderColor: cluster.color, backgroundColor: cluster.color + "20" }}
-                />
-                <span className="truncate">{cluster.name}</span>
-              </div>
-            ))}
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div
+              className="w-6 h-0.5"
+              style={{ background: "repeating-linear-gradient(90deg, #dc2626 0, #dc2626 4px, transparent 4px, transparent 8px)" }}
+            ></div>
+            <span>Contradicting</span>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Clusters */}
+        {clusters.length > 0 && (
+          <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+            <span className="text-xs font-medium text-gray-700 flex-shrink-0">Clusters:</span>
+            <div className="flex items-center gap-3 flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+              {clusters.map((cluster) => (
+                <div key={cluster.id} className="flex items-center gap-1.5 text-xs text-gray-600 flex-shrink-0">
+                  <div
+                    className="w-3 h-3 rounded-sm flex-shrink-0 border-2"
+                    style={{ borderColor: cluster.color, backgroundColor: cluster.color + "20" }}
+                  />
+                  <span className="whitespace-nowrap">{cluster.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -604,7 +619,13 @@ function CompanyFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+        <>
+          {/* Backdrop to catch clicks anywhere */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute top-full mt-2 right-0 w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
           <div className="p-2 border-b border-gray-100 flex justify-between items-center">
             <span className="text-xs font-medium text-gray-500">Filter by company</span>
             {selected.length > 0 && (
@@ -654,6 +675,7 @@ function CompanyFilter({
             )}
           </div>
         </div>
+        </>
       )}
     </div>
   );
@@ -674,7 +696,6 @@ function IdeaGraphInner() {
   const [viewLevel, setViewLevel] = useState<ViewLevel>("clusters");
   const [focusedCluster, setFocusedCluster] = useState<ClusterInfo | null>(null);
   const [focusedIdea, setFocusedIdea] = useState<IdeaNodeData | null>(null);
-  const [showAllNodes, setShowAllNodes] = useState(false); // Toggle for bubbles vs all nodes view
 
   // Company filter state
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
@@ -704,16 +725,6 @@ function IdeaGraphInner() {
     fetchData();
   }, []);
 
-  // Extract all unique companies from the data
-  const availableCompanies = useMemo(() => {
-    if (!graphData) return [];
-    const companiesSet = new Set<string>();
-    graphData.ideas.forEach((idea) => {
-      const companies = extractCompaniesFromTitle(idea.episode_title);
-      companies.forEach((c) => companiesSet.add(c));
-    });
-    return Array.from(companiesSet).sort();
-  }, [graphData]);
 
   // Filter ideas by selected companies
   const filteredIdeas = useMemo(() => {
@@ -768,12 +779,6 @@ function IdeaGraphInner() {
     setSelectedIdea(null);
   }, []);
 
-  const handleShowAllIdeas = useCallback(() => {
-    setFocusedIdea(null);
-    setViewLevel("allIdeas");
-    setSelectedIdea(null);
-  }, []);
-
   const handleExpandIdea = useCallback((idea: IdeaNodeData) => {
     setFocusedIdea(idea);
     setViewLevel("connectedIdeas");
@@ -793,23 +798,90 @@ function IdeaGraphInner() {
     return graphData.ideas.filter((i) => connectedIds.has(i.id));
   }, [graphData]);
 
+  // Extract companies only from ideas currently visible on screen
+  const availableCompanies = useMemo(() => {
+    if (!graphData) return [];
+
+    let relevantIdeas: IdeaNodeData[] = [];
+
+    if (viewLevel === "clusters") {
+      // Level 1: All companies from all ideas
+      relevantIdeas = graphData.ideas;
+    } else if (viewLevel === "topIdeas" && focusedCluster) {
+      // Level 2: Only companies from visible top ideas
+      const clusterIdeas = graphData.ideas.filter(i => i.cluster_id === focusedCluster.id);
+      const topIdeaIds = new Set(focusedCluster.top_idea_ids);
+      const topIdeas = clusterIdeas.filter(i => topIdeaIds.has(i.id));
+      relevantIdeas = topIdeas.length > 0 ? topIdeas : clusterIdeas.slice(0, 8);
+    } else if (viewLevel === "connectedIdeas" && focusedIdea) {
+      // Level 3: Center idea + its connected ideas
+      const connectedIdeas = getConnectedIdeas(focusedIdea.id);
+      relevantIdeas = [focusedIdea, ...connectedIdeas];
+    } else if (viewLevel === "allIdeas" && focusedCluster) {
+      // Level 4: All ideas in the focused cluster
+      relevantIdeas = graphData.ideas.filter(i => i.cluster_id === focusedCluster.id);
+    }
+
+    const companiesSet = new Set<string>();
+    relevantIdeas.forEach((idea) => {
+      const companies = extractCompaniesFromTitle(idea.episode_title);
+      companies.forEach((c) => companiesSet.add(c));
+    });
+    return Array.from(companiesSet).sort();
+  }, [graphData, viewLevel, focusedCluster, focusedIdea, getConnectedIdeas]);
+
+  // Count of ideas visible in current view
+  const visibleIdeaCount = useMemo(() => {
+    if (!graphData) return 0;
+
+    const baseIdeas = selectedCompanies.length > 0 ? filteredIdeas : graphData.ideas;
+
+    if (viewLevel === "clusters") {
+      // Level 1: Show total ideas (filtered if company filter active)
+      return baseIdeas.length;
+    } else if (viewLevel === "topIdeas" && focusedCluster) {
+      // Level 2: Show count of top ideas in focused cluster
+      const clusterIdeas = baseIdeas.filter(i => i.cluster_id === focusedCluster.id);
+      const topIdeaIds = new Set(focusedCluster.top_idea_ids);
+      const topIdeas = clusterIdeas.filter(i => topIdeaIds.has(i.id));
+      return topIdeas.length > 0 ? topIdeas.length : Math.min(clusterIdeas.length, 8);
+    } else if (viewLevel === "connectedIdeas" && focusedIdea) {
+      // Level 3: Center idea + connected ideas
+      const connectedIdeas = getConnectedIdeas(focusedIdea.id);
+      return 1 + connectedIdeas.length;
+    } else if (viewLevel === "allIdeas" && focusedCluster) {
+      // Level 4: All ideas in focused cluster
+      return baseIdeas.filter(i => i.cluster_id === focusedCluster.id).length;
+    }
+
+    return baseIdeas.length;
+  }, [graphData, viewLevel, focusedCluster, focusedIdea, selectedCompanies, filteredIdeas, getConnectedIdeas]);
+
   // Layout helpers
-  const layoutClusters = useCallback((clusters: ClusterInfo[]): Node[] => {
+  const layoutClusters = useCallback((clusters: ClusterInfo[], ideasById: Map<string, IdeaNodeData>): Node[] => {
     const cols = Math.ceil(clusters.length / 2);
-    const spacing = 400;
+    const spacingX = 700; // Horizontal spacing between cards
+    const spacingY = 850; // Vertical spacing (cards are taller due to content)
 
     return clusters.map((cluster, i) => {
       const row = Math.floor(i / cols);
       const col = i % cols;
-      const offsetX = -((cols - 1) * spacing) / 2;
-      const offsetY = -spacing / 2;
+      const offsetX = -((cols - 1) * spacingX) / 2;
+      const offsetY = -spacingY / 2;
+
+      // Get top ideas for this cluster
+      const topIdeas = (cluster.top_idea_ids || [])
+        .map(id => ideasById.get(id))
+        .filter((idea): idea is IdeaNodeData => idea !== undefined)
+        .slice(0, 5);
 
       return {
         id: `cluster-${cluster.id}`,
         type: "clusterSummary",
-        position: { x: col * spacing + offsetX, y: row * spacing + offsetY },
+        position: { x: col * spacingX + offsetX, y: row * spacingY + offsetY },
         data: {
           ...cluster,
+          topIdeas,
           onExpand: () => handleExpandCluster(cluster),
         } as unknown as Record<string, unknown>,
         draggable: false,
@@ -993,88 +1065,6 @@ function IdeaGraphInner() {
     return ideaNodes;
   }, [handleExpandIdea]);
 
-  // Layout top ideas grouped by cluster (for "All Nodes" toggle view)
-  const layoutAllNodesGrouped = useCallback((
-    ideas: IdeaNodeData[],
-    clusters: ClusterInfo[],
-    colorMap: Map<string, string>
-  ): Node[] => {
-    const allNodes: Node[] = [];
-    const maxIdeasPerCluster = 8; // Only show top 8 ideas per cluster
-    const nodeWidth = 1000;
-    const nodeHeight = 400;
-    const nodesPerRow = 2; // 2 ideas per row within a cluster
-    const clusterGapX = 4800; // Horizontal gap between clusters
-    const clusterGapY = 3800; // Vertical gap between cluster rows
-    const regionPadding = 80; // Padding around the region
-
-    // Create a map of ideas by ID for quick lookup
-    const ideasById = new Map<string, IdeaNodeData>();
-    ideas.forEach(idea => ideasById.set(idea.id, idea));
-
-    // Layout clusters in 2 columns
-    const cols = 2;
-    clusters.forEach((cluster, clusterIdx) => {
-      const clusterCol = clusterIdx % cols;
-      const clusterRow = Math.floor(clusterIdx / cols);
-      const clusterX = clusterCol * clusterGapX;
-      const clusterY = clusterRow * clusterGapY;
-
-      // Get top ideas for this cluster (using top_idea_ids)
-      const topIdeaIds = cluster.top_idea_ids || [];
-      const topIdeas = topIdeaIds
-        .map(id => ideasById.get(id))
-        .filter((idea): idea is IdeaNodeData => idea !== undefined)
-        .slice(0, maxIdeasPerCluster);
-
-      // Calculate region dimensions based on ideas layout
-      const rowCount = Math.ceil(topIdeas.length / nodesPerRow);
-      const regionWidth = nodesPerRow * (nodeWidth + 100) + regionPadding * 2;
-      const regionHeight = 350 + rowCount * (nodeHeight + 100) + regionPadding * 2;
-
-      // Add background region (z-index handled by order - add first so it's behind)
-      allNodes.push({
-        id: `region-${cluster.id}`,
-        type: "clusterRegion",
-        position: {
-          x: clusterX - regionPadding,
-          y: clusterY - regionPadding - 50,
-        },
-        data: {
-          color: cluster.color,
-          width: regionWidth,
-          height: regionHeight,
-          label: cluster.name,
-        } as unknown as Record<string, unknown>,
-        draggable: false,
-        selectable: false,
-        zIndex: -1, // Ensure it's behind other nodes
-      });
-
-      // Layout top ideas in a 2-column grid below the header
-      topIdeas.forEach((idea, ideaIdx) => {
-        const col = ideaIdx % nodesPerRow;
-        const row = Math.floor(ideaIdx / nodesPerRow);
-        const x = clusterX + col * (nodeWidth + 100);
-        const y = clusterY + 300 + row * (nodeHeight + 100);
-
-        allNodes.push({
-          id: idea.id,
-          type: "idea",
-          position: { x, y },
-          data: {
-            ...idea,
-            color: colorMap.get(idea.cluster_id || "") || cluster.color,
-            onClick: () => handleExpandIdea(idea),
-            size: "large",
-          } as unknown as Record<string, unknown>,
-        });
-      });
-    });
-
-    return allNodes;
-  }, [handleExpandIdea]);
-
   // Build nodes and edges based on current view
   useEffect(() => {
     if (!graphData) return;
@@ -1082,56 +1072,16 @@ function IdeaGraphInner() {
     const colorMap = new Map<string, string>();
     graphData.clusters.forEach((c) => colorMap.set(c.id, c.color));
 
+    // Create ideas lookup map for cluster cards
+    const ideasById = new Map<string, IdeaNodeData>();
+    graphData.ideas.forEach((idea) => ideasById.set(idea.id, idea));
+
     let newNodes: Node[] = [];
     let newEdges: Edge[] = [];
 
     if (viewLevel === "clusters") {
-      if (showAllNodes) {
-        // All nodes grouped by cluster view
-        const ideasToUse = selectedCompanies.length > 0 ? filteredIdeas : graphData.ideas;
-        newNodes = layoutAllNodesGrouped(ideasToUse, filteredClusters, colorMap);
-
-        // Add edges between connected ideas in the All Nodes view
-        // Get all visible idea IDs (excluding region nodes)
-        const visibleIdeaIds = new Set(
-          newNodes
-            .filter(n => n.type === "idea")
-            .map(n => n.id)
-        );
-
-        // Build position map for calculating nearest handles
-        const positionMap = new Map(newNodes.map((n) => [n.id, n.position]));
-
-        // Create edges for all connections between visible ideas
-        newEdges = graphData.connections
-          .filter((conn) => visibleIdeaIds.has(conn.source) && visibleIdeaIds.has(conn.target))
-          .map((conn, idx) => {
-            const sourcePos = positionMap.get(conn.source);
-            const targetPos = positionMap.get(conn.target);
-            const handles = sourcePos && targetPos
-              ? getNearestHandles(sourcePos, targetPos)
-              : { sourceHandle: "bottom-source", targetHandle: "top" };
-
-            return {
-              id: `edge-${idx}`,
-              source: conn.source,
-              target: conn.target,
-              sourceHandle: handles.sourceHandle,
-              targetHandle: handles.targetHandle,
-              type: "default",
-              animated: conn.connection_type === "contradictory",
-              style: {
-                stroke: conn.connection_type === "contradictory" ? "#dc2626" : "#1f2937",
-                strokeWidth: conn.connection_type === "contradictory" ? 3 : getStrokeWidth(conn.strength),
-                strokeDasharray: conn.connection_type === "contradictory" ? "6,6" : undefined,
-                opacity: 0.5,
-              },
-            };
-          });
-      } else {
-        // Use filtered clusters with correct idea counts - no edges between clusters
-        newNodes = layoutClusters(filteredClusters);
-      }
+      // Use filtered clusters with correct idea counts - no edges between clusters
+      newNodes = layoutClusters(filteredClusters, ideasById);
     } else if (viewLevel === "topIdeas" && focusedCluster) {
       // Get ideas for this cluster
       const clusterIdeas = selectedCompanies.length > 0
@@ -1265,7 +1215,7 @@ function IdeaGraphInner() {
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [graphData, viewLevel, focusedCluster, focusedIdea, showAllNodes, layoutClusters, layoutTopIdeas, layoutConnectedIdeas, layoutAllIdeas, layoutAllNodesGrouped, getConnectedIdeas, setNodes, setEdges, selectedCompanies, filteredIdeaIds, filteredClusters, filteredIdeas]);
+  }, [graphData, viewLevel, focusedCluster, focusedIdea, layoutClusters, layoutTopIdeas, layoutConnectedIdeas, layoutAllIdeas, getConnectedIdeas, setNodes, setEdges, selectedCompanies, filteredIdeaIds, filteredClusters, filteredIdeas]);
 
   // Fit view when nodes change - zoom level varies by view
   useEffect(() => {
@@ -1314,29 +1264,27 @@ function IdeaGraphInner() {
 
   return (
     <div className="h-screen w-screen relative">
-      {/* Navigation */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
-        <div className="bg-white rounded-full shadow-lg px-6 py-2 flex items-center gap-4">
-          <span className="text-sm font-semibold text-gray-900">Idea Constellation</span>
-          <span className="text-gray-300">|</span>
-          <Link href="/search" className="text-sm text-gray-600 hover:text-gray-900">Search</Link>
-          {graphData && (
-            <>
-              <span className="text-gray-300">|</span>
-              <span className="text-xs text-gray-500">
-                {selectedCompanies.length > 0 ? filteredIdeas.length : graphData.ideas.length} ideas • {graphData.clusters.length} clusters
-              </span>
-              <span className="text-gray-300">|</span>
-              <CompanyFilter
-                companies={availableCompanies}
-                selected={selectedCompanies}
-                onChange={setSelectedCompanies}
-                isOpen={isFilterOpen}
-                setIsOpen={setIsFilterOpen}
-              />
-            </>
-          )}
-        </div>
+      {/* Additional Controls (positioned after shared navigation) */}
+      <div className="fixed top-4 left-[640px] right-4 z-40 flex items-center gap-3">
+        {/* Stats and Filter */}
+        {graphData && (
+          <div className="bg-white rounded-full shadow-lg px-3 h-12 flex items-center gap-2 flex-shrink-0">
+            <span className="text-xs text-gray-500">
+              {visibleIdeaCount} ideas
+            </span>
+            <span className="text-gray-300">|</span>
+            <CompanyFilter
+              companies={availableCompanies}
+              selected={selectedCompanies}
+              onChange={setSelectedCompanies}
+              isOpen={isFilterOpen}
+              setIsOpen={setIsFilterOpen}
+            />
+          </div>
+        )}
+
+        {/* Legend - spans remaining width */}
+        <Legend clusters={graphData?.clusters || []} />
       </div>
 
       {/* Selected Idea Panel */}
@@ -1348,13 +1296,7 @@ function IdeaGraphInner() {
         clusterName={focusedCluster?.name || null}
         onBackToClusters={handleBackToClusters}
         onBackToTopIdeas={handleBackToTopIdeas}
-        onShowAll={handleShowAllIdeas}
-        showAllNodes={showAllNodes}
-        onToggleAllNodes={() => setShowAllNodes(!showAllNodes)}
       />
-
-      {/* Legend */}
-      <Legend clusters={graphData?.clusters || []} />
 
       {/* React Flow Canvas */}
       <ReactFlow

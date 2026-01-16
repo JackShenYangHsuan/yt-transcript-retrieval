@@ -130,7 +130,17 @@ export interface IdeaGraphResponse {
   total_connections: number;
 }
 
+// Cache for idea graph data
+let ideaGraphCache: IdeaGraphResponse | null = null;
+let ideaGraphCacheTime: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export async function getIdeaGraph(): Promise<IdeaGraphResponse> {
+  // Return cached data if still valid
+  if (ideaGraphCache && Date.now() - ideaGraphCacheTime < CACHE_DURATION) {
+    return ideaGraphCache;
+  }
+
   const response = await fetch(`${API_URL}/ideas/graph`);
 
   if (!response.ok) {
@@ -140,5 +150,11 @@ export async function getIdeaGraph(): Promise<IdeaGraphResponse> {
     throw new Error(`Failed to fetch idea graph: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // Cache the response
+  ideaGraphCache = data;
+  ideaGraphCacheTime = Date.now();
+
+  return data;
 }
