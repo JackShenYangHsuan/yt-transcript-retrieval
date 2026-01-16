@@ -24,9 +24,14 @@ class Settings(BaseSettings):
     qdrant_url: Optional[str] = None
     qdrant_api_key: Optional[str] = None
 
+    # OpenAI API
+    openai_api_key: str = ""
+
     # Model settings
-    embedding_model: str = "BAAI/bge-m3"
+    embedding_model: str = "text-embedding-3-small"  # OpenAI model
+    embedding_provider: str = "openai"  # "openai" or "local"
     reranker_model: str = "BAAI/bge-reranker-large"
+    use_reranker: bool = True  # Cross-encoder reranking for better accuracy
 
     # Chunking settings
     max_chunk_tokens: int = 512

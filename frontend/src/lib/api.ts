@@ -44,7 +44,8 @@ export interface SearchFilters {
 export async function searchPodcasts(
   query: string,
   filters?: SearchFilters,
-  topK: number = 15
+  topK: number = 15,
+  includeReranking: boolean = true
 ): Promise<SearchResponse> {
   const response = await fetch(`${API_URL}/search`, {
     method: "POST",
@@ -55,7 +56,7 @@ export async function searchPodcasts(
       query,
       filters: filters || {},
       top_k: topK,
-      include_reranking: true,
+      include_reranking: includeReranking,
     }),
   });
 

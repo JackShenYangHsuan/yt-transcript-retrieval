@@ -60,12 +60,12 @@ class BGEReranker:
 
 
 class SearchPipeline:
-    """Complete search pipeline with hybrid retrieval and reranking."""
+    """Complete search pipeline with hybrid retrieval and optional reranking."""
 
     def __init__(
         self,
         hybrid_retriever,
-        reranker: BGEReranker,
+        reranker: BGEReranker | None = None,
         rerank_top_n: int = 5,
     ):
         """Initialize the search pipeline."""
@@ -93,7 +93,8 @@ class SearchPipeline:
         # Hybrid retrieval (dense + sparse + RRF fusion)
         candidates = self.hybrid_retriever.search(query, filters)
 
-        if not include_reranking or not candidates:
+        # Skip reranking if disabled or no reranker configured
+        if not include_reranking or not candidates or not self.reranker:
             return candidates
 
         # Rerank candidates

@@ -9,11 +9,14 @@ export default function Home() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [useReranking, setUseReranking] = useState(false);
+  const [searchTime, setSearchTime] = useState<number | null>(null);
 
   const handleClear = () => {
     setQuery("");
     setResults([]);
     setHasSearched(false);
+    setSearchTime(null);
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -22,10 +25,12 @@ export default function Home() {
 
     setIsLoading(true);
     setHasSearched(true);
+    setSearchTime(null);
 
     try {
-      const data = await searchPodcasts(query);
+      const data = await searchPodcasts(query, undefined, 15, useReranking);
       setResults(data.results);
+      setSearchTime(data.query_time_ms);
     } catch (error) {
       console.error("Search failed:", error);
       setResults([]);
@@ -39,7 +44,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 pt-32 pb-12">
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-12">
+        <form onSubmit={handleSearch} className="mb-6">
           <div className="relative">
             <input
               type="text"
@@ -75,6 +80,33 @@ export default function Home() {
             </button>
           </div>
         </form>
+
+        {/* Reranking Toggle */}
+        <div className="flex items-center justify-between mb-8">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={useReranking}
+                onChange={(e) => setUseReranking(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
+              <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+            </div>
+            <span className="text-sm text-gray-600">
+              {useReranking ? "More accurate search" : "Faster search"}
+            </span>
+            <span className="text-xs text-gray-400">
+              (re-ranking {useReranking ? "on" : "off"})
+            </span>
+          </label>
+          {searchTime !== null && (
+            <span className="text-xs text-gray-400">
+              {searchTime.toFixed(0)}ms
+            </span>
+          )}
+        </div>
 
         {/* Results */}
         {isLoading && (
@@ -196,13 +228,6 @@ function ResultCard({ result }: { result: SearchResult }) {
         >
           {expanded ? "Show less" : "Show more"}
         </button>
-      )}
-
-      {/* Speaker indicator */}
-      {result.speaker && (
-        <p className="text-xs text-gray-400 mt-2">
-          — {result.speaker}
-        </p>
       )}
 
       {/* YouTube Button - at bottom */}

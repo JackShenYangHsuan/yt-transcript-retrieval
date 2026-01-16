@@ -240,6 +240,7 @@ const COMPANY_DOMAINS: Record<string, string> = {
   "etsy": "etsy.com",
   "automattic": "automattic.com",
   "wordpress": "wordpress.com",
+  "typeform": "typeform.com",
 };
 
 // Guest name to company mapping (for guests whose company isn't in the title)
@@ -463,6 +464,10 @@ const GUEST_COMPANIES: Record<string, string> = {
   "nickey skarstad": "Duolingo",
   "denise tilles": "Produx Labs",
   "archie abrams": "Lyft",
+  "alex hardimen": "New York Times",
+  "ami vora": "WhatsApp",
+  "itamar gilad": "Google",
+  "oji udezue": "Typeform",
 };
 
 // Known company names that appear in titles (for title-based extraction)

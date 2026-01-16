@@ -12,7 +12,7 @@ from src.config import settings
 from src.data.chunker import create_all_chunks
 from src.data.contextual import enrich_all_chunks
 from src.data.parser import parse_all_transcripts
-from src.indexing.embeddings import BGEEmbedder
+from src.indexing.embeddings import create_embedder
 from src.indexing.qdrant_store import PodcastVectorStore
 from src.retrieval.bm25 import BM25Retriever
 
@@ -74,7 +74,12 @@ def main():
 
     # Step 4: Generate embeddings and index to Qdrant
     print("\n[4/5] Generating embeddings and indexing to Qdrant...")
-    embedder = BGEEmbedder(model_name=settings.embedding_model)
+    print(f"Using {settings.embedding_provider} embeddings ({settings.embedding_model})")
+    embedder = create_embedder(
+        provider=settings.embedding_provider,
+        model_name=settings.embedding_model,
+        api_key=settings.openai_api_key,
+    )
 
     # Ensure data directories exist
     settings.qdrant_path.mkdir(parents=True, exist_ok=True)

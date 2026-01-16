@@ -324,21 +324,22 @@ if host_q + guest_a <= 400 tokens:
     type: "pipeline",
     position: { x: 550, y: 120 },
     data: {
-      label: "BGE-M3 Embeddings",
-      description: "Dense vector embeddings for semantic similarity",
+      label: "OpenAI Embeddings",
+      description: "Dense vector embeddings via OpenAI API",
       icon: "🧠",
       color: "#8b5cf6",
       techDetails: [
-        { label: "Model", value: "BAAI/bge-m3" },
-        { label: "Dimension", value: "1024-dim vectors" },
-        { label: "Device", value: "MPS (Apple Silicon) or CPU" },
-        { label: "Normalization", value: "L2 normalized" },
-        { label: "Query Prefix", value: '"Represent this sentence for searching..."' },
+        { label: "Model", value: "text-embedding-3-small" },
+        { label: "Dimension", value: "1536-dim vectors" },
+        { label: "API", value: "OpenAI Embeddings API" },
+        { label: "Cost", value: "~$0.02 per 1M tokens" },
+        { label: "Latency", value: "~100-200ms per query" },
       ],
-      codeSnippet: `# Query gets special prefix
-query = QUERY_PREFIX + user_query
-embedding = model.encode(query,
-  normalize_embeddings=True)`,
+      codeSnippet: `response = openai.embeddings.create(
+  model="text-embedding-3-small",
+  input=query
+)
+embedding = response.data[0].embedding`,
     },
   },
 
@@ -460,26 +461,31 @@ retriever.index(corpus_tokens)`,
     },
   },
 
-  // Reranker
+  // Reranker (Optional - user toggle)
   {
     id: "reranker",
     type: "pipeline",
     position: { x: 1520, y: 300 },
     data: {
-      label: "BGE Reranker",
-      description: "Cross-encoder reranking for precision",
+      label: "BGE Reranker (Optional)",
+      description: "Cross-encoder reranking for precision. User-toggleable in UI.",
       icon: "🏆",
       color: "#22c55e",
       techDetails: [
         { label: "Model", value: "BAAI/bge-reranker-large" },
         { label: "Type", value: "Cross-encoder (query + doc)" },
         { label: "Input", value: "20 candidates from RRF" },
-        { label: "Output", value: "Top 5 reranked results" },
-        { label: "FP16", value: "Half precision on GPU" },
+        { label: "Output", value: "Top 15 reranked results" },
+        { label: "RAM", value: "~500MB (local model)" },
+        { label: "Toggle", value: "User controls via UI switch" },
+        { label: "Latency", value: "+2-4s when enabled" },
       ],
-      codeSnippet: `pairs = [[query, doc] for doc in candidates]
-scores = reranker.compute_score(pairs)
-return sorted(results, key=score)[:5]`,
+      codeSnippet: `# Optional: skip if user toggled off
+if include_reranking and reranker:
+    pairs = [[query, doc] for doc in candidates]
+    scores = reranker.compute_score(pairs)
+    return sorted(results, key=score)[:15]
+return candidates[:15]  # bypass`,
     },
   },
 
@@ -491,7 +497,7 @@ return sorted(results, key=score)[:5]`,
     data: {
       label: "Search Results",
       icon: "✅",
-      description: "Top 5 ranked passages with deep links",
+      description: "Top 15 ranked passages with deep links",
     },
   },
 ];
@@ -520,6 +526,7 @@ const searchEdges: Edge[] = [
   { id: "e10", source: "bm25-index", target: "bm25-retrieval", type: "step", style: { stroke: "#8b5cf6", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#8b5cf6") },
   { id: "e11", source: "dense-retrieval", target: "rrf", type: "step", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
   { id: "e12", source: "bm25-retrieval", target: "rrf", type: "step", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") },
+  // Reranker path (optional - indicated by node label)
   { id: "e13", source: "rrf", target: "reranker", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
   { id: "e14", source: "reranker", target: "results", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
 ];
@@ -606,13 +613,14 @@ Return JSON:
     position: { x: 580, y: 60 },
     data: {
       label: "Idea Embeddings",
-      description: "Embed summary + context for similarity",
+      description: "Embed summary + context via OpenAI API",
       icon: "🧠",
       color: "#8b5cf6",
       techDetails: [
-        { label: "Model", value: "BAAI/bge-m3 (same as search)" },
+        { label: "Model", value: "text-embedding-3-small" },
         { label: "Input", value: "summary + full_context concatenated" },
-        { label: "Dimension", value: "1024-dim vectors" },
+        { label: "Dimension", value: "1536-dim vectors" },
+        { label: "Batch Size", value: "50 ideas per API call" },
       ],
     },
   },
@@ -862,6 +870,10 @@ function HowItWorksInner() {
               <div className="w-8 h-0.5 bg-gray-400"></div>
               <span>Data Flow</span>
             </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-8 h-0.5" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8b5cf6 0, #8b5cf6 4px, transparent 4px, transparent 8px)' }}></div>
+              <span>Index Lookup</span>
+            </div>
           </div>
           <p className="text-[10px] text-gray-400 mt-2">
             Hover over nodes for details
@@ -878,11 +890,15 @@ function HowItWorksInner() {
               <div className="text-gray-500">Episodes:</div>
               <div className="font-mono text-gray-900">~300</div>
               <div className="text-gray-500">Chunks:</div>
-              <div className="font-mono text-gray-900">~15k</div>
-              <div className="text-gray-500">Embedding Dim:</div>
-              <div className="font-mono text-gray-900">1024</div>
-              <div className="text-gray-500">Rerank Top-K:</div>
-              <div className="font-mono text-gray-900">15</div>
+              <div className="font-mono text-gray-900">~28k</div>
+              <div className="text-gray-500">Embedding:</div>
+              <div className="font-mono text-gray-900">OpenAI API</div>
+              <div className="text-gray-500">Dimension:</div>
+              <div className="font-mono text-gray-900">1536</div>
+              <div className="text-gray-500">Reranker:</div>
+              <div className="font-mono text-gray-900">Optional</div>
+              <div className="text-gray-500">Latency:</div>
+              <div className="font-mono text-gray-900">~1s / ~4s</div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">

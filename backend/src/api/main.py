@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..config import settings
-from ..indexing.embeddings import BGEEmbedder
+from ..indexing.embeddings import create_embedder
 from ..indexing.qdrant_store import PodcastVectorStore
 from ..retrieval.bm25 import BM25Retriever
 from ..retrieval.hybrid import HybridRetriever, SearchFilters
@@ -41,9 +41,15 @@ async def lifespan(app: FastAPI):
     global search_pipeline, vector_store
 
     print("Loading models and indexes...")
+    print(f"Embedding provider: {settings.embedding_provider}")
+    print(f"Reranker enabled: {settings.use_reranker}")
 
-    # Initialize embedder
-    embedder = BGEEmbedder(model_name=settings.embedding_model)
+    # Initialize embedder (OpenAI or local)
+    embedder = create_embedder(
+        provider=settings.embedding_provider,
+        model_name=settings.embedding_model,
+        api_key=settings.openai_api_key,
+    )
 
     # Initialize vector store
     vector_store = PodcastVectorStore(
@@ -70,8 +76,10 @@ async def lifespan(app: FastAPI):
         fusion_top_k=settings.fusion_top_k,
     )
 
-    # Initialize reranker
-    reranker = BGEReranker(model_name=settings.reranker_model)
+    # Initialize reranker (only if enabled)
+    reranker = None
+    if settings.use_reranker:
+        reranker = BGEReranker(model_name=settings.reranker_model)
 
     # Create search pipeline
     search_pipeline = SearchPipeline(
