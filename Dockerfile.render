@@ -2,29 +2,31 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including git-lfs
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    git \
+    git-lfs \
+    && rm -rf /var/lib/apt/lists/* \
+    && git lfs install
 
-# Copy requirements first for caching
-COPY backend/requirements.txt .
+# Clone repo and pull LFS files to get actual data
+ARG REPO_URL=https://github.com/JackShenYangHsuan/yt-transcript-retrieval.git
+RUN git clone --depth 1 ${REPO_URL} /tmp/repo && \
+    cd /tmp/repo && \
+    git lfs pull && \
+    mv /tmp/repo/data /app/data_staging && \
+    mv /tmp/repo/backend/requirements.txt /app/ && \
+    mv /tmp/repo/backend/src /app/src && \
+    mv /tmp/repo/backend/run.py /app/ && \
+    mv /tmp/repo/start.sh /app/ && \
+    rm -rf /tmp/repo
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY backend/src ./src
-COPY backend/run.py .
-
-# Copy pre-built indexes and data to staging location
-# (Render's disk mount will override /app/data at runtime)
-COPY data/qdrant ./data_staging/qdrant
-COPY data/bm25_index ./data_staging/bm25_index
-COPY data/transcripts ./data_staging/transcripts
-COPY data/ideas ./data_staging/ideas
-
-# Copy startup script
-COPY start.sh .
+# Ensure startup script is executable
 RUN chmod +x start.sh
 
 # Expose port (Render sets PORT env var)
