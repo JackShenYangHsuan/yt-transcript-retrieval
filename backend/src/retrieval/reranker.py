@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 import torch
-from FlagEmbedding import FlagReranker
 
 
 class BGEReranker:
-    """BGE Reranker for cross-encoder reranking."""
+    """BGE Reranker for cross-encoder reranking with lazy loading."""
 
-    def __init__(self, model_name: str = "BAAI/bge-reranker-large"):
-        """Initialize the reranker."""
+    def __init__(self, model_name: str = "BAAI/bge-reranker-base"):
+        """Initialize the reranker (lazy - model loaded on first use)."""
+        self.model_name = model_name
         self.device = "mps" if torch.backends.mps.is_available() else "cpu"
-        print(f"Loading reranker {model_name} on {self.device}...")
+        self._reranker = None  # Lazy loaded
+        print(f"Reranker configured: {model_name} (will load on first use)")
 
-        # FlagReranker automatically handles device placement
-        self.reranker = FlagReranker(model_name, use_fp16=self.device != "cpu")
-        print("Reranker loaded.")
+    def _load_model(self):
+        """Load the model on first use."""
+        if self._reranker is None:
+            from FlagEmbedding import FlagReranker
+            print(f"Loading reranker {self.model_name} on {self.device}...")
+            self._reranker = FlagReranker(self.model_name, use_fp16=self.device != "cpu")
+            print("Reranker loaded.")
 
     def rerank(
         self,
@@ -40,11 +45,14 @@ class BGEReranker:
         if not results:
             return []
 
+        # Lazy load the model on first rerank request
+        self._load_model()
+
         # Prepare query-document pairs
         pairs = [[query, result[text_key]] for result in results]
 
         # Compute reranking scores
-        scores = self.reranker.compute_score(pairs, normalize=True)
+        scores = self._reranker.compute_score(pairs, normalize=True)
 
         # Handle single result case (scores returns a float instead of list)
         if isinstance(scores, (int, float)):
