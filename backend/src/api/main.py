@@ -174,12 +174,17 @@ async def search(request: SearchRequest):
         exclude_sponsors=filter_settings.exclude_sponsors,
     )
 
-    # Execute search
-    results = search_pipeline.search(
-        query=request.query,
-        filters=filters,
-        include_reranking=request.include_reranking,
-    )
+    # Execute search with error handling
+    try:
+        results = search_pipeline.search(
+            query=request.query,
+            filters=filters,
+            include_reranking=request.include_reranking,
+        )
+    except Exception as e:
+        import traceback
+        error_detail = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
 
     # Apply min_content_length filter
     min_len = filter_settings.min_content_length
