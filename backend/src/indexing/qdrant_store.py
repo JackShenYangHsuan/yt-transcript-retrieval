@@ -220,8 +220,8 @@ class PodcastVectorStore:
         return {
             "name": self.collection_name,
             "points_count": info.points_count,
-            "vectors_count": info.vectors_count,
-            "status": info.status,
+            "indexed_vectors_count": getattr(info, 'indexed_vectors_count', info.points_count),
+            "status": str(info.status),
         }
 
     def get_by_ids(
