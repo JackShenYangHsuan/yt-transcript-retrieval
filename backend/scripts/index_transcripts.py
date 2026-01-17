@@ -85,10 +85,12 @@ def main():
     settings.qdrant_path.mkdir(parents=True, exist_ok=True)
     settings.bm25_index_path.mkdir(parents=True, exist_ok=True)
 
-    # Initialize vector store
+    # Initialize vector store (use Qdrant Cloud if configured, else local)
     vector_store = PodcastVectorStore(
         collection_name=settings.collection_name,
-        path=settings.qdrant_path,
+        path=settings.qdrant_path if not settings.qdrant_url else None,
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key,
         embedding_dimension=embedder.dimension,
     )
     vector_store.create_collection(recreate=args.recreate)
