@@ -16,7 +16,7 @@ services:
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: USE_RERANKER
-        value: "false"  # Disabled until memory issues resolved
+        value: "true"  # Lazy loaded - only uses memory when reranking requested
       - key: RERANKER_MODEL
         value: "BAAI/bge-reranker-base"
       - key: BM25_LIGHTWEIGHT_MODE
