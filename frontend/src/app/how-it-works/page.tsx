@@ -512,30 +512,31 @@ if exclude_sponsors:
     },
   },
 
-  // Reranker (enabled by default, user-toggleable)
+  // Reranker (coming soon)
   {
     id: "reranker",
     type: "pipeline",
     position: { x: 1860, y: 300 },
     data: {
       label: "BGE Reranker",
-      description: "Cross-encoder reranking for precision. Enabled by default, toggleable in UI.",
+      description: "Cross-encoder reranking for precision. Coming soon!",
       icon: "🏆",
-      color: "#22c55e",
+      color: "#9ca3af",
       techDetails: [
-        { label: "Model", value: "BAAI/bge-reranker-large" },
+        { label: "Status", value: "Coming Soon" },
+        { label: "Model", value: "BAAI/bge-reranker-base" },
         { label: "Type", value: "Cross-encoder (query + doc)" },
-        { label: "Input", value: "20 candidates from RRF" },
-        { label: "Output", value: "Top 15 reranked results" },
-        { label: "Default", value: "Enabled (user can toggle off)" },
-        { label: "Latency", value: "+2-4s when enabled" },
+        { label: "Memory", value: "~400MB (lazy loaded)" },
+        { label: "Benefit", value: "Higher precision ranking" },
+        { label: "Latency", value: "+2-3s when enabled" },
       ],
-      codeSnippet: `# Enabled by default, user can toggle off
-if include_reranking and reranker:
-    pairs = [[query, doc] for doc in candidates]
-    scores = reranker.compute_score(pairs)
-    return sorted(results, key=score)[:15]
-return candidates[:15]  # bypass if toggled off`,
+      codeSnippet: `# Lazy loading - model loads on first use
+def _load_model(self):
+    if self._reranker is None:
+        self._reranker = FlagReranker(
+            self.model_name,
+            use_fp16=True
+        )`,
     },
   },
 
@@ -578,9 +579,9 @@ const searchEdges: Edge[] = [
   { id: "e12", source: "bm25-retrieval", target: "rrf", type: "smoothstep", style: { stroke: "#ec4899", strokeWidth: 2 }, markerEnd: arrowMarker("#ec4899") } as Edge,
   // Sponsor filter (removes ad content)
   { id: "e13", source: "rrf", target: "sponsor-filter", type: "step", style: { stroke: "#ef4444", strokeWidth: 2 }, markerEnd: arrowMarker("#ef4444") },
-  // Reranker path (optional - indicated by node label)
-  { id: "e13a", source: "sponsor-filter", target: "reranker", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
-  { id: "e14", source: "reranker", target: "results", type: "step", style: { stroke: "#22c55e", strokeWidth: 2 }, markerEnd: arrowMarker("#22c55e") },
+  // Reranker path (coming soon - grayed out)
+  { id: "e13a", source: "sponsor-filter", target: "reranker", type: "step", style: { stroke: "#9ca3af", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#9ca3af") },
+  { id: "e14", source: "reranker", target: "results", type: "step", style: { stroke: "#9ca3af", strokeWidth: 2, strokeDasharray: "5,5" }, markerEnd: arrowMarker("#9ca3af") },
 ];
 
 // ============================================================================
@@ -957,9 +958,9 @@ function HowItWorksInner() {
               <div className="text-gray-500">Embedding:</div>
               <div className="font-mono text-gray-900">1536-dim</div>
               <div className="text-gray-500">Reranker:</div>
-              <div className="font-mono text-gray-900">On (toggle)</div>
+              <div className="font-mono text-gray-400">Coming soon</div>
               <div className="text-gray-500">Latency:</div>
-              <div className="font-mono text-gray-900">~1s / ~4s</div>
+              <div className="font-mono text-gray-900">~500ms</div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">

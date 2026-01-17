@@ -10,7 +10,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchTime, setSearchTime] = useState<number | null>(null);
-  const [useReranker, setUseReranker] = useState(false);
 
   const handleClear = () => {
     setQuery("");
@@ -28,7 +27,7 @@ export default function Home() {
     setSearchTime(null);
 
     try {
-      const data = await searchPodcasts(query, undefined, 15, useReranker);
+      const data = await searchPodcasts(query, undefined, 15, false);
       setResults(data.results);
       setSearchTime(data.query_time_ms);
     } catch (error) {
@@ -87,26 +86,6 @@ export default function Home() {
             </button>
           </div>
         </form>
-
-        {/* Search Options */}
-        <div className="flex items-center justify-start gap-3 mb-4">
-          <button
-            type="button"
-            onClick={() => setUseReranker(!useReranker)}
-            className={`w-11 h-6 rounded-full relative transition-colors duration-200 ${
-              useReranker ? "bg-green-500" : "bg-gray-300"
-            }`}
-          >
-            <div
-              className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${
-                useReranker ? "right-0.5" : "left-0.5"
-              }`}
-            />
-          </button>
-          <span className="text-sm text-gray-600">
-            {useReranker ? "More accurate (rerank on)" : "Faster (rerank off)"}
-          </span>
-        </div>
 
         {/* Search Time */}
         {searchTime !== null && (
