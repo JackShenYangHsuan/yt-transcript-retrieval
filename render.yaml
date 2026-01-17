@@ -16,9 +16,7 @@ services:
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: USE_RERANKER
-        value: "true"
-      - key: RERANKER_MODEL
-        value: "BAAI/bge-reranker-base"  # Smaller model (~400MB vs 1.2GB)
+        value: "false"  # Disabled to reduce memory and debug search
       - key: BM25_LIGHTWEIGHT_MODE
         value: "true"  # Lightweight mode to reduce memory
       - key: QDRANT_URL
